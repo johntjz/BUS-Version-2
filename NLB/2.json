@@ -66,7 +66,7 @@
         "latitude": 22.261950,
         "longitude": 113.986850,
         "segmentTimeSec": 60,
-        "segmentDistanceM": 350,
+        "segmentDistanceM: 350,
         "sectionFare": 20.4,
         "holidaySectionFare": 37.0
       },
@@ -107,7 +107,7 @@
         "stopName_s": "太古休假宿舍",
         "latitude": 22.254650,
         "longitude": 113.977450,
-        "segmentTimeSec": 120,
+        "segmentTimeSec: 120,
         "segmentDistanceM: 650,
         "sectionFare": 20.4,
         "holidaySectionFare": 37.0
