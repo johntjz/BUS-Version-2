@@ -32,7 +32,7 @@ window.BusData.NLB.push(
       {
         stopSeq: 1,
         stopId: "NLB_36_O_01",
-        nlbApiStopId: "135", // Replace with real NLB numeric API ID
+        nlbApiStopId: "135",
         stopName_e: "Tung Chung Tat Tung Road Bus Terminus",
         stopName_c: "東涌達東路巴士總站",
         latitude: 22.289430,
@@ -83,42 +83,18 @@ window.BusData.NLB.push(
       {
         stopSeq: 5,
         stopId: "NLB_36_O_05",
-        nlbApiStopId: "139",
-        stopName_e: "Discovery Bay Tunnel",
-        stopName_c: "愉景灣隧道",
-        latitude: 22.301550,
-        longitude: 113.992200,
-        segmentTimeSec: 120,
-        segmentDistanceM: 1500,
-        sectionFare: 10.7
-      },
-      {
-        stopSeq: 6,
-        stopId: "NLB_36_O_06",
-        nlbApiStopId: "140",
-        stopName_e: "Siu Ho Wan Water Treatment Works",
-        stopName_c: "小蠔灣濾水廠",
-        latitude: 22.308550,
-        longitude: 114.004010,
-        segmentTimeSec: 120,
-        segmentDistanceM: 1000,
-        sectionFare: 10.7
-      },
-      {
-        stopSeq: 7,
-        stopId: "NLB_36_O_07",
         nlbApiStopId: "141",
         stopName_e: "Siu Ho Wan",
         stopName_c: "小蠔灣",
         latitude: 22.316400,
         longitude: 114.008450,
-        segmentTimeSec: 180,
-        segmentDistanceM: 1800,
+        segmentTimeSec: 300,
+        segmentDistanceM: 2800,
         sectionFare: 10.7
       },
       {
-        stopSeq: 8,
-        stopId: "NLB_36_O_08",
+        stopSeq: 6,
+        stopId: "NLB_36_O_06",
         nlbApiStopId: "142",
         stopName_e: "Disneyland",
         stopName_c: "迪士尼樂園",
@@ -236,7 +212,7 @@ window.BusData.NLB.push(
       {
         stopSeq: 7,
         stopId: "NLB_36_I_07",
-        nlbApiStopId: "136",
+        nlbApiStopId: "144", 
         stopName_e: "Fu Tung Plaza",
         stopName_c: "富東廣場",
         latitude: 22.289250,
