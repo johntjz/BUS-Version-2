@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Pulse Transport - Hybrid Engine V5</title>
+<title>Pulse Transport - Hybrid Engine V6</title>
 <style>
   :root {
     --bg-color: #121214;
@@ -180,7 +180,7 @@
 const API_BASE = 'https://rt.data.gov.hk/v2/transport/nlb';
 const REFRESH_INTERVAL = 15; 
 const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
-const APP_VERSION = "v.1035_JSON_FIX";
+const APP_VERSION = "v.1036_V6_ENGINE";
 
 // JSON File loader
 const STATIC_FILES_TO_LOAD = ['1', '2', '34', '36']; 
@@ -263,12 +263,16 @@ async function bootStaticEngine() {
   document.getElementById('loadingText').innerText = getT('booting');
   const promises = STATIC_FILES_TO_LOAD.map(async (routeNo) => {
     try {
-      const res = await fetch(`nlb/${routeNo}.json`);
+      const res = await fetch(`nlb/${routeNo}.json`, { cache: 'no-store' }); // Forces fresh fetch to avoid cached syntax errors
       if (res.ok) {
         const data = await res.json();
         window.BusData.NLB.push(...data);
+      } else {
+        console.warn(`Failed to fetch ${routeNo}.json`);
       }
-    } catch(err) { console.warn(`Failed to load ${routeNo}.json`); }
+    } catch(err) { 
+      console.error(`🚨 CRITICAL: Syntax error in ${routeNo}.json! Check for missing quotes or commas!`, err); 
+    }
   });
   await Promise.all(promises);
 }
@@ -575,7 +579,6 @@ function getFutureSchedules(staticMeta, neededCount, existingEtas, currentStopDa
     if (!scheduleArray) return [];
 
     let additionalEtas = [];
-    
     let cumulativeOffsetSec = 0;
     if (currentStopData && staticMeta.stops) {
         for (const s of staticMeta.stops) {
@@ -597,7 +600,6 @@ function getFutureSchedules(staticMeta, neededCount, existingEtas, currentStopDa
         const [hrs, mins] = cleanTime.split(':').map(Number);
         let schedDate = new Date(now);
         schedDate.setHours(hrs, mins, 0, 0);
-        
         schedDate.setSeconds(schedDate.getSeconds() + cumulativeOffsetSec);
 
         if (hrs < 4 && now.getHours() > 20) schedDate.setDate(schedDate.getDate() + 1);
@@ -606,7 +608,8 @@ function getFutureSchedules(staticMeta, neededCount, existingEtas, currentStopDa
         let diffMins = Math.round((schedDate - now) / 60000);
 
         if (diffMins >= 0) {
-            let isDuplicate = existingEtas.some(eta => Math.abs(eta.mins - diffMins) < 15);
+            // Deduplicate safely against raw (unscaled) GPS times to prevent timetable collisions
+            let isDuplicate = existingEtas.some(eta => Math.abs((eta.rawMins !== undefined ? eta.rawMins : eta.mins) - diffMins) < 15);
             if (!isDuplicate) {
                 additionalEtas.push({ mins: diffMins, type: 'static', rawTime: cleanTime });
             }
@@ -638,28 +641,38 @@ async function processSmartArrivals(group, matchDetails) {
     }));
 
     const now = Date.now();
-    combinedArrivals.sort((a, b) => new Date(a.arrival.estimatedArrivalTime.replace(/-/g, '/')) - new Date(b.arrival.estimatedArrivalTime.replace(/-/g, '/')));
+    
+    // Core Engine Upgrade: Deduplicate overlapping Scheduled vs Live API results
+    let uniqueArrivals = [];
+    for (let c of combinedArrivals) {
+        let sTime = new Date(c.arrival.generateTime.replace(/-/g, '/')).getTime();
+        let aTime = new Date(c.arrival.estimatedArrivalTime.replace(/-/g, '/')).getTime();
+        let rawMins = Math.max(0, Math.floor((aTime - sTime) / 60000));
+        c.rawMins = rawMins;
 
+        let dupIdx = uniqueArrivals.findIndex(u => Math.abs(u.rawMins - rawMins) <= 4);
+        if (dupIdx !== -1) {
+            let existingIsSched = uniqueArrivals[dupIdx].arrival.noGPS === 1 || uniqueArrivals[dupIdx].arrival.noGPS === '1';
+            let currentIsSched = c.arrival.noGPS === 1 || c.arrival.noGPS === '1';
+            if (existingIsSched && !currentIsSched) uniqueArrivals[dupIdx] = c; 
+        } else {
+            uniqueArrivals.push(c);
+        }
+    }
+    
+    uniqueArrivals.sort((a, b) => a.rawMins - b.rawMins);
     let finalEtasList = [];
 
-    for (let i = 0; i < Math.min(3, combinedArrivals.length); i++) {
-        const activeItem = combinedArrivals[i];
+    for (let i = 0; i < Math.min(3, uniqueArrivals.length); i++) {
+        const activeItem = uniqueArrivals[i];
         const activeBus = activeItem.arrival;
-        const serverTime = new Date(activeBus.generateTime.replace(/-/g, '/'));
-        const arrivalTime = new Date(activeBus.estimatedArrivalTime.replace(/-/g, '/'));
         const isNoGPS = activeBus.noGPS === 1 || activeBus.noGPS === '1';
-
-        let elapsedSinceGenerate = now - serverTime.getTime();
-        if (elapsedSinceGenerate < 0 || elapsedSinceGenerate > 120000) elapsedSinceGenerate = 0; 
-        const remainingMs = (arrivalTime.getTime() - serverTime.getTime()) - elapsedSinceGenerate;
-        const rawEtaMins = Math.max(0, Math.floor(remainingMs / 60000));
-        
-        let adjustedMins = rawEtaMins;
-        if (isNoGPS && rawEtaMins > 0) adjustedMins = Math.max(0, Math.floor(rawEtaMins * 0.65));
+        let adjustedMins = activeItem.rawMins;
+        if (isNoGPS && activeItem.rawMins > 0) adjustedMins = Math.max(0, Math.floor(activeItem.rawMins * 0.65));
 
         finalEtasList.push({
             mins: adjustedMins,
-            rawMins: rawEtaMins,
+            rawMins: activeItem.rawMins,
             type: isNoGPS ? 'scheduled' : 'live',
             itemInfo: activeItem
         });
@@ -774,7 +787,9 @@ async function processSmartArrivals(group, matchDetails) {
             smartEl.innerText = `${primaryEta.mins}${getT('min')}`;
             smartEl.className = (primaryEta.type==='live' && primaryEta.mins !== primaryEta.rawMins) ? 'smart-eta adjusted' : 'smart-eta';
         }
-        if (boxOffEl) boxOffEl.style.display = (primaryEta.mins === primaryEta.rawMins && primaryEta.type==='live') ? 'none' : 'flex';
+        
+        // Visual Cleanup: Only show the crossed-out "Official" time if the engine adjusted it by 2+ mins
+        if (boxOffEl) boxOffEl.style.display = (Math.abs(primaryEta.mins - primaryEta.rawMins) <= 1 && primaryEta.type==='live') ? 'none' : 'flex';
 
         if (primaryEta.itemInfo) {
             const { pct, activeBars } = calculateOccupancy(group.routeNo, group.dest_e, combinedArrivals.map(c => c.arrival), primaryEta.itemInfo.targetIndex, primaryEta.itemInfo.totalStops, now);
