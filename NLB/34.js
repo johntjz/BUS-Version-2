@@ -1,4 +1,4 @@
-// data/routes/nlb/nlb_north.js
+// NLB/34.js
 
 window.BusData = window.BusData || {};
 window.BusData.NLB = window.BusData.NLB || [];
@@ -10,7 +10,7 @@ window.BusData.NLB.push(
   {
     routeId: "34_O",
     routeNo: "34",
-    nlbApiRouteId: "34", // Replace with exact API route ID
+    nlbApiRouteId: "34",
     company: "NLB",
     direction: "outbound",
     origin_e: "Shek Mun Kap",
@@ -23,19 +23,23 @@ window.BusData.NLB.push(
       weekdays: "07:00 - 22:15",
       sundaysAndHolidays: "07:55 - 22:15"
     },
-    frequencyMins: "25 - 75",
+    frequencyMins: "Fixed Timetable",
+    timetable: {
+      mon_to_sat: ["07:00", "07:25", "07:55", "08:00", "08:50", "09:50", "10:45", "11:30", "12:35", "14:00", "15:15", "16:30", "17:40", "18:30", "19:20", "20:10", "21:25", "22:15"],
+      sun_and_holidays: ["07:55", "08:45", "09:30", "10:15", "10:55", "11:45", "12:35", "13:25", "14:15", "15:05", "15:55", "16:45", "17:35", "18:25", "19:15", "20:15", "21:15", "22:15"]
+    },
     stops: [
       {
         stopSeq: 1,
         stopId: "NLB_34_O_01",
-        nlbApiStopId: "nlb_api_stop_001", 
+        nlbApiStopId: "110", // Placeholder for actual API ID
         stopName_e: "Shek Mun Kap",
         stopName_c: "石門甲",
         latitude: 22.270912,
         longitude: 113.935102,
         isTerminal: true,
         minTurnaroundMins: 5,
-        linkedInboundRoute: "34_I", // Predict departure by checking arriving 34_I buses
+        linkedInboundRoute: "34_I",
         segmentTimeSec: 0,
         segmentDistanceM: 0,
         sectionFare: 5.1
@@ -43,7 +47,7 @@ window.BusData.NLB.push(
       {
         stopSeq: 2,
         stopId: "NLB_34_O_02",
-        nlbApiStopId: "nlb_api_stop_002",
+        nlbApiStopId: "111",
         stopName_e: "Shek Mun Kap Village",
         stopName_c: "石門甲村",
         latitude: 22.272311,
@@ -55,7 +59,7 @@ window.BusData.NLB.push(
       {
         stopSeq: 3,
         stopId: "NLB_34_O_03",
-        nlbApiStopId: "nlb_api_stop_003",
+        nlbApiStopId: "112",
         stopName_e: "Shek Mun Kap Road",
         stopName_c: "石門甲道",
         latitude: 22.273645,
@@ -67,7 +71,7 @@ window.BusData.NLB.push(
       {
         stopSeq: 4,
         stopId: "NLB_34_O_04",
-        nlbApiStopId: "nlb_api_stop_004",
+        nlbApiStopId: "113",
         stopName_e: "Lung Tseng Tau",
         stopName_c: "龍井頭",
         latitude: 22.275580,
@@ -79,7 +83,7 @@ window.BusData.NLB.push(
       {
         stopSeq: 5,
         stopId: "NLB_34_O_05",
-        nlbApiStopId: "nlb_api_stop_005",
+        nlbApiStopId: "114",
         stopName_e: "Wong Ka Wai",
         stopName_c: "黃家圍",
         latitude: 22.276840,
@@ -91,7 +95,7 @@ window.BusData.NLB.push(
       {
         stopSeq: 6,
         stopId: "NLB_34_O_06",
-        nlbApiStopId: "nlb_api_stop_006",
+        nlbApiStopId: "115",
         stopName_e: "Ha Ling Pei",
         stopName_c: "下嶺皮",
         latitude: 22.277980,
@@ -103,7 +107,7 @@ window.BusData.NLB.push(
       {
         stopSeq: 7,
         stopId: "NLB_34_O_07",
-        nlbApiStopId: "nlb_api_stop_007",
+        nlbApiStopId: "116",
         stopName_e: "Sheung Ling Pei",
         stopName_c: "上嶺皮",
         latitude: 22.279150,
@@ -115,7 +119,7 @@ window.BusData.NLB.push(
       {
         stopSeq: 8,
         stopId: "NLB_34_O_08",
-        nlbApiStopId: "nlb_api_stop_008",
+        nlbApiStopId: "117",
         stopName_e: "Tung Chung Rural Committee Office",
         stopName_c: "東涌鄉事委員會",
         latitude: 22.280420,
@@ -127,7 +131,7 @@ window.BusData.NLB.push(
       {
         stopSeq: 9,
         stopId: "NLB_34_O_09",
-        nlbApiStopId: "nlb_api_stop_009",
+        nlbApiStopId: "118",
         stopName_e: "Chek Lap Kok New Village",
         stopName_c: "赤鱲角新村",
         latitude: 22.281890,
@@ -135,13 +139,12 @@ window.BusData.NLB.push(
         segmentTimeSec: 120,
         segmentDistanceM: 400,
         sectionFare: 5.1,
-        // UI filters this out for certain trips to prevent Ghost ETAs
-        omittedHours: ["07:00", "08:15", "12:15"] 
+        omittedHours: ["07:25", "07:55", "10:45", "11:30", "08:45", "10:55"] 
       },
       {
         stopSeq: 10,
         stopId: "NLB_34_O_10",
-        nlbApiStopId: "nlb_api_stop_010",
+        nlbApiStopId: "119",
         stopName_e: "Ma Wan Sun Tsuen",
         stopName_c: "馬灣新村",
         latitude: 22.281130,
@@ -153,8 +156,8 @@ window.BusData.NLB.push(
       {
         stopSeq: 11,
         stopId: "NLB_34_O_11",
-        nlbApiStopId: "nlb_api_stop_011",
-        stopName_e: "Mei Yat House, Yat Tung Estate / North Lantau Hospital",
+        nlbApiStopId: "120",
+        stopName_e: "North Lantau Hospital (North Bound), Mei Yat House Yat Tung Estate",
         stopName_c: "北大嶼山醫院(北行), 逸東邨美逸樓",
         latitude: 22.281890,
         longitude: 113.937080,
@@ -165,59 +168,59 @@ window.BusData.NLB.push(
       {
         stopSeq: 12,
         stopId: "NLB_34_O_12",
-        nlbApiStopId: "nlb_api_stop_012",
-        stopName_e: "Yat Tung Estate Bus Terminus",
-        stopName_c: "逸東邨巴士總站",
+        nlbApiStopId: "121",
+        stopName_e: "Yat Tung Estate",
+        stopName_c: "逸東邨",
         latitude: 22.282560,
         longitude: 113.935120,
         segmentTimeSec: 120,
         segmentDistanceM: 300,
-        isIntermediateTerminal: true, // Often pauses here
-        bottleneckRisk: true, // High likelihood of delay in estate
+        isIntermediateTerminal: true, 
+        bottleneckRisk: true, 
         sectionFare: 3.7,
-        hasSectionFareDrop: true // Triggers "Fare Drop" UI badge
+        hasSectionFareDrop: true 
       },
       {
         stopSeq: 13,
         stopId: "NLB_34_O_13",
-        nlbApiStopId: "nlb_api_stop_013",
-        stopName_e: "North Lantau Hospital (Southbound)",
+        nlbApiStopId: "122",
+        stopName_e: "North Lantau Hospital (South Bound)",
         stopName_c: "北大嶼山醫院(南行)",
         latitude: 22.281350,
         longitude: 113.936990,
-        segmentTimeSec: 150, // Looping out of terminus takes time
+        segmentTimeSec: 150, 
         segmentDistanceM: 400,
         sectionFare: 3.7
       },
       {
         stopSeq: 14,
         stopId: "NLB_34_O_14",
-        nlbApiStopId: "nlb_api_stop_014",
+        nlbApiStopId: "123",
         stopName_e: "Tung Chung Fire Station",
         stopName_c: "東涌消防局",
         latitude: 22.288540,
         longitude: 113.940520,
-        segmentTimeSec: 240, // Longer stretch on main road
+        segmentTimeSec: 240, 
         segmentDistanceM: 950,
         sectionFare: 3.7
       },
       {
         stopSeq: 15,
         stopId: "NLB_34_O_15",
-        nlbApiStopId: "nlb_api_stop_015",
+        nlbApiStopId: "124",
         stopName_e: "Tung Chung Cable Car Terminal",
         stopName_c: "東涌纜車站",
         latitude: 22.289890,
         longitude: 113.939020,
         segmentTimeSec: 90,
         segmentDistanceM: 300,
-        bottleneckRisk: true, // Roundabout traffic
+        bottleneckRisk: true, 
         sectionFare: 3.7
       },
       {
         stopSeq: 16,
         stopId: "NLB_34_O_16",
-        nlbApiStopId: "nlb_api_stop_016",
+        nlbApiStopId: "125",
         stopName_e: "Tung Chung Tat Tung Road Bus Terminus",
         stopName_c: "東涌達東路巴士總站",
         latitude: 22.289430,
@@ -247,4 +250,200 @@ window.BusData.NLB.push(
     holidayFare: 5.1,
     serviceHours: {
       weekdays: "07:30 - 21:45",
-      sundaysAndHolidays: "07:30 -
+      sundaysAndHolidays: "07:30 - 21:45"
+    },
+    frequencyMins: "Fixed Timetable",
+    timetable: {
+      mon_to_sat: ["07:30", "08:25", "09:25", "10:20", "12:10", "13:30", "14:45", "16:00", "17:15", "18:05", "18:55", "19:45", "20:30", "21:00", "21:45"],
+      sun_and_holidays: ["07:30", "08:20", "09:05", "09:45", "10:30", "11:20", "12:10", "13:00", "13:50", "14:40", "15:30", "16:20", "17:10", "18:00", "18:50", "19:45", "20:45", "21:45"]
+    },
+    stops: [
+      {
+        stopSeq: 1,
+        stopId: "NLB_34_I_01",
+        nlbApiStopId: "125",
+        stopName_e: "Tung Chung Tat Tung Road Bus Terminus",
+        stopName_c: "東涌達東路巴士總站",
+        latitude: 22.289430,
+        longitude: 113.941120,
+        isTerminal: true,
+        segmentTimeSec: 0,
+        segmentDistanceM: 0,
+        sectionFare: 5.1
+      },
+      {
+        stopSeq: 2,
+        stopId: "NLB_34_I_02",
+        nlbApiStopId: "126",
+        stopName_e: "Fu Tung Plaza",
+        stopName_c: "富東廣場",
+        latitude: 22.289250,
+        longitude: 113.940150,
+        segmentTimeSec: 60,
+        segmentDistanceM: 200,
+        sectionFare: 5.1
+      },
+      {
+        stopSeq: 3,
+        stopId: "NLB_34_I_03",
+        nlbApiStopId: "127",
+        stopName_e: "Yu Tung Court",
+        stopName_c: "裕東苑",
+        latitude: 22.288210, // Approximate based on previous mapping
+        longitude: 113.940980,
+        segmentTimeSec: 60,
+        segmentDistanceM: 250,
+        sectionFare: 5.1
+      },
+      {
+        stopSeq: 4,
+        stopId: "NLB_34_I_04",
+        nlbApiStopId: "128",
+        stopName_e: "North Lantau Hospital (North Bound), Mei Yat House Yat Tung Estate",
+        stopName_c: "北大嶼山醫院(北行), 逸東邨美逸樓",
+        latitude: 22.281890,
+        longitude: 113.937080,
+        segmentTimeSec: 180,
+        segmentDistanceM: 1200,
+        sectionFare: 5.1
+      },
+      {
+        stopSeq: 5,
+        stopId: "NLB_34_I_05",
+        nlbApiStopId: "129",
+        stopName_e: "Yat Tung Estate",
+        stopName_c: "逸東邨",
+        latitude: 22.282560,
+        longitude: 113.935120,
+        isIntermediateTerminal: true,
+        bottleneckRisk: true,
+        segmentTimeSec: 120,
+        segmentDistanceM: 300,
+        sectionFare: 3.7,
+        hasSectionFareDrop: true
+      },
+      {
+        stopSeq: 6,
+        stopId: "NLB_34_I_06",
+        nlbApiStopId: "130",
+        stopName_e: "North Lantau Hospital (South Bound)",
+        stopName_c: "北大嶼山醫院(南行)",
+        latitude: 22.281350,
+        longitude: 113.936990,
+        segmentTimeSec: 120,
+        segmentDistanceM: 400,
+        sectionFare: 3.7
+      },
+      {
+        stopSeq: 7,
+        stopId: "NLB_34_I_07",
+        nlbApiStopId: "131",
+        stopName_e: "Yu Tai Court",
+        stopName_c: "裕泰苑",
+        latitude: 22.281130, // Approximate
+        longitude: 113.939210,
+        segmentTimeSec: 90,
+        segmentDistanceM: 300,
+        sectionFare: 3.7
+      },
+      {
+        stopSeq: 8,
+        stopId: "NLB_34_I_08",
+        nlbApiStopId: "118",
+        stopName_e: "Chek Lap Kok New Village",
+        stopName_c: "赤鱲角新村",
+        latitude: 22.281890,
+        longitude: 113.942350,
+        segmentTimeSec: 90,
+        segmentDistanceM: 300,
+        sectionFare: 3.7,
+        omittedHours: ["07:30", "14:40", "10:30"]
+      },
+      {
+        stopSeq: 9,
+        stopId: "NLB_34_I_09",
+        nlbApiStopId: "117",
+        stopName_e: "Tung Chung Rural Committee Office",
+        stopName_c: "東涌鄉事委員會",
+        latitude: 22.280420,
+        longitude: 113.939980,
+        segmentTimeSec: 60,
+        segmentDistanceM: 180,
+        sectionFare: 3.7
+      },
+      {
+        stopSeq: 10,
+        stopId: "NLB_34_I_10",
+        nlbApiStopId: "116",
+        stopName_e: "Sheung Ling Pei",
+        stopName_c: "上嶺皮",
+        latitude: 22.279150,
+        longitude: 113.939810,
+        segmentTimeSec: 60,
+        segmentDistanceM: 150,
+        sectionFare: 3.7
+      },
+      {
+        stopSeq: 11,
+        stopId: "NLB_34_I_11",
+        nlbApiStopId: "115",
+        stopName_e: "Ha Ling Pei",
+        stopName_c: "下嶺皮",
+        latitude: 22.277980,
+        longitude: 113.939500,
+        segmentTimeSec: 60,
+        segmentDistanceM: 140,
+        sectionFare: 3.7
+      },
+      {
+        stopSeq: 12,
+        stopId: "NLB_34_I_12",
+        nlbApiStopId: "114",
+        stopName_e: "Wong Ka Wai",
+        stopName_c: "黃家圍",
+        latitude: 22.276840,
+        longitude: 113.939220,
+        segmentTimeSec: 60,
+        segmentDistanceM: 150,
+        sectionFare: 3.7
+      },
+      {
+        stopSeq: 13,
+        stopId: "NLB_34_I_13",
+        nlbApiStopId: "113",
+        stopName_e: "Lung Tseng Tau",
+        stopName_c: "龍井頭",
+        latitude: 22.275580,
+        longitude: 113.938815,
+        segmentTimeSec: 60,
+        segmentDistanceM: 200,
+        sectionFare: 3.7
+      },
+      {
+        stopSeq: 14,
+        stopId: "NLB_34_I_14",
+        nlbApiStopId: "111", // Skips Shek Mun Kap Road in this direction
+        stopName_e: "Shek Mun Kap Village",
+        stopName_c: "石門甲村",
+        latitude: 22.272311,
+        longitude: 113.936054,
+        segmentTimeSec: 90,
+        segmentDistanceM: 350,
+        sectionFare: 3.7
+      },
+      {
+        stopSeq: 15,
+        stopId: "NLB_34_I_15",
+        nlbApiStopId: "110",
+        stopName_e: "Shek Mun Kap",
+        stopName_c: "石門甲",
+        latitude: 22.270912,
+        longitude: 113.935102,
+        isTerminal: true,
+        segmentTimeSec: 60,
+        segmentDistanceM: 200,
+        sectionFare: 3.7
+      }
+    ]
+  }
+);
