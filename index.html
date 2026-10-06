@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Pulse Transport - Hybrid Engine V4</title>
+<title>Pulse Transport - Hybrid Engine V5</title>
 <style>
   :root {
     --bg-color: #121214;
@@ -180,10 +180,10 @@
 const API_BASE = 'https://rt.data.gov.hk/v2/transport/nlb';
 const REFRESH_INTERVAL = 15; 
 const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
-const APP_VERSION = "v.1033_JSON_EXPAND";
+const APP_VERSION = "v.1034_JSON_PRECISION";
 
 // JSON File loader
-const STATIC_FILES_TO_LOAD = ['1', '34', '36']; 
+const STATIC_FILES_TO_LOAD = ['1', '2', '34', '36']; 
 const staticEngineMeta = {}; 
 window.BusData = { NLB: [] };
 
@@ -263,7 +263,7 @@ async function bootStaticEngine() {
   document.getElementById('loadingText').innerText = getT('booting');
   const promises = STATIC_FILES_TO_LOAD.map(async (routeNo) => {
     try {
-      const res = await fetch(`NLB/${routeNo}.json`);
+      const res = await fetch(`nlb/${routeNo}.json`);
       if (res.ok) {
         const data = await res.json();
         window.BusData.NLB.push(...data);
@@ -562,29 +562,55 @@ async function updateNetworkTelemetry() {
 function getFutureSchedules(staticMeta, neededCount, existingEtas, currentStopData) {
     if (!staticMeta || !staticMeta.timetable) return [];
     const now = new Date();
-    const dayType = (now.getDay() === 0 || now.getDay() === 6) ? 'sun_and_holidays' : 'mon_to_sat';
-    const scheduleArray = staticMeta.timetable[dayType];
+    const day = now.getDay();
+    
+    // Core Upgrade 2: High-precision Day-Specific Timetable Matching
+    let scheduleArray = [];
+    if (day === 0) {
+        scheduleArray = staticMeta.timetable['sun_and_holidays'];
+    } else if (day === 6) {
+        scheduleArray = staticMeta.timetable['saturday'] || staticMeta.timetable['mon_to_sat'] || staticMeta.timetable['sun_and_holidays'];
+    } else {
+        scheduleArray = staticMeta.timetable['mon_to_fri'] || staticMeta.timetable['mon_to_sat'];
+    }
     if (!scheduleArray) return [];
 
     let additionalEtas = [];
-    const baseStopOffsetSec = currentStopData?.segmentTimeSec || 0; // Rough heuristic
+    
+    // Core Upgrade 1: Cumulative Segment Time Calculation
+    let cumulativeOffsetSec = 0;
+    if (currentStopData && staticMeta.stops) {
+        for (const s of staticMeta.stops) {
+            cumulativeOffsetSec += (s.segmentTimeSec || 0);
+            if (s.stopName_e.toLowerCase().includes(currentStopData.stopName_e.toLowerCase()) || 
+                currentStopData.stopName_e.toLowerCase().includes(s.stopName_e.toLowerCase())) {
+                break;
+            }
+        }
+    }
 
     for (let timeStr of scheduleArray) {
         const cleanTime = timeStr.split(' ')[0];
-        const [hrs, mins] = cleanTime.split(':').map(Number);
         
+        // Skip omitted hours specific to this stop
+        if (currentStopData && currentStopData.omittedHours && currentStopData.omittedHours.includes(cleanTime)) {
+            continue;
+        }
+
+        const [hrs, mins] = cleanTime.split(':').map(Number);
         let schedDate = new Date(now);
         schedDate.setHours(hrs, mins, 0, 0);
         
-        // Add offset to simulate time to reach this specific stop
-        schedDate.setSeconds(schedDate.getSeconds() + baseStopOffsetSec);
+        // Add exact cumulative offset to simulate time to reach this specific stop
+        schedDate.setSeconds(schedDate.getSeconds() + cumulativeOffsetSec);
 
+        // Handle past midnight edge cases
         if (hrs < 4 && now.getHours() > 20) schedDate.setDate(schedDate.getDate() + 1);
+        if (hrs > 20 && now.getHours() < 4) schedDate.setDate(schedDate.getDate() - 1);
 
         let diffMins = Math.round((schedDate - now) / 60000);
 
         if (diffMins >= 0) {
-            // Deduplicate: If an API ETA exists within 15 mins of this static schedule, skip it
             let isDuplicate = existingEtas.some(eta => Math.abs(eta.mins - diffMins) < 15);
             if (!isDuplicate) {
                 additionalEtas.push({ mins: diffMins, type: 'static', rawTime: cleanTime });
@@ -594,7 +620,6 @@ function getFutureSchedules(staticMeta, neededCount, existingEtas, currentStopDa
     }
     return additionalEtas;
 }
-
 
 async function processSmartArrivals(group, matchDetails) {
   const groupKey = group.key; const cardEl = document.getElementById(`route-${groupKey}`);
@@ -622,7 +647,6 @@ async function processSmartArrivals(group, matchDetails) {
 
     let finalEtasList = [];
 
-    // Process Live ETAs
     for (let i = 0; i < Math.min(3, combinedArrivals.length); i++) {
         const activeItem = combinedArrivals[i];
         const activeBus = activeItem.arrival;
@@ -646,8 +670,72 @@ async function processSmartArrivals(group, matchDetails) {
         });
     }
 
-    // Static Data FUSION: If we have less than 3 ETAs, check the JSON timetable
     const staticMeta = staticEngineMeta[matchDetails[0].routeId];
+    
+    // Validate API Drops against Offline Frequency Meta
+    if (busStateMap[groupKey] && (busStateMap[groupKey].isScheduled || (busStateMap[groupKey].filter && busStateMap[groupKey].filter.x <= 3))) {
+       const activeState = busStateMap[groupKey];
+       let isBusStillThere = false;
+       for (let c of finalEtasList) {
+           const cPseudoId = c.itemInfo.arrival.estimatedArrivalTime.replace(/[^0-9]/g, '');
+           if (cPseudoId === activeState.pseudoBusId || (activeState.filter && Math.abs(c.mins - activeState.filter.x) <= 3)) {
+               isBusStillThere = true; break;
+           }
+       }
+       if (!isBusStillThere) {
+           let freqMaxMinutes = 30; 
+           if (staticMeta && staticMeta.frequencyMins) {
+               if (staticMeta.frequencyMins.includes("Fixed Timetable")) freqMaxMinutes = 60;
+               else {
+                   const parts = staticMeta.frequencyMins.split('-').map(p => parseInt(p.replace(/[^0-9]/g, '')));
+                   freqMaxMinutes = parts.length > 1 ? parts[1] : (parts[0] || 30);
+               }
+           }
+           const timeSinceLost = now - activeState.timestamp;
+           const maxMissingTime = Math.min(freqMaxMinutes * 2500, 180000);
+           
+           if (timeSinceLost > maxMissingTime) {
+               delete busStateMap[groupKey];
+           } else {
+               let projectedMins = Math.max(0, Math.round(activeState.filter ? activeState.filter.x - (timeSinceLost / 60000) : 0));
+               finalEtasList.unshift({ mins: projectedMins, rawMins: projectedMins, type: activeState.isScheduled ? 'scheduled' : 'live', isGhost: true });
+           }
+       }
+    }
+
+    // High-Precision Upstream Tracking Integration
+    if (finalEtasList.length > 0 && finalEtasList[0].type === 'live' && !finalEtasList[0].isGhost) {
+        const primaryItem = finalEtasList[0].itemInfo;
+        const state = busStateMap[groupKey] || { filter: new KalmanFilter1D(0.1, 2.0, primaryItem.rawMins, 1.0), timestamp: now };
+        
+        let validUpstreamBus = null;
+        let upstreamEtaMins = 0;
+        if (primaryItem.upstreamEtaRes && primaryItem.upstreamEtaRes.estimatedArrivals) {
+            for (let uBus of primaryItem.upstreamEtaRes.estimatedArrivals) {
+                const uArrTime = new Date(uBus.estimatedArrivalTime.replace(/-/g, '/'));
+                const uServerTime = new Date(uBus.generateTime.replace(/-/g, '/'));
+                const uEtaMins = Math.max(0, Math.floor((uArrTime - uServerTime) / 60000));
+                if (Math.abs(primaryItem.rawMins - uEtaMins) <= 15) { validUpstreamBus = uBus; upstreamEtaMins = uEtaMins; break; }
+            }
+        }
+        
+        // Core Upgrade 3: Use JSON segmentTimeSec instead of Haversine GPS formula
+        if (validUpstreamBus) {
+            let minTransitMins = 1.0;
+            if (currentStopData && currentStopData.segmentTimeSec) {
+                minTransitMins = currentStopData.segmentTimeSec / 60;
+            }
+            if (primaryItem.rawMins < upstreamEtaMins + Math.floor(minTransitMins)) {
+                finalEtasList[0].mins = Math.ceil(upstreamEtaMins + minTransitMins);
+            }
+        }
+        
+        const dtMins = (now - state.timestamp) / 60000;
+        finalEtasList[0].mins = Math.round(state.filter.update(finalEtasList[0].mins, dtMins, (finalEtasList[0].mins < state.filter.x)));
+        state.timestamp = now;
+        busStateMap[groupKey] = state;
+    }
+
     if (finalEtasList.length < 3 && staticMeta) {
         const needed = 3 - finalEtasList.length;
         const staticEtas = getFutureSchedules(staticMeta, needed, finalEtasList, currentStopData);
@@ -655,7 +743,6 @@ async function processSmartArrivals(group, matchDetails) {
     }
     finalEtasList.sort((a, b) => a.mins - b.mins);
 
-    // Render Logic
     if (finalEtasList.length === 0) {
       if(cardEl) { cardEl.dataset.smartMins = 9999; cardEl.classList.add('inactive'); }
       if(offEl) offEl.innerText = '--'; if(smartEl) smartEl.innerText = '--';
@@ -665,8 +752,6 @@ async function processSmartArrivals(group, matchDetails) {
     }
     
     if (cardEl) cardEl.classList.remove('inactive');
-
-    // Primary UI Update (The Top ETA)
     const primaryEta = finalEtasList[0];
     cardEl.dataset.smartMins = primaryEta.mins;
 
@@ -695,16 +780,16 @@ async function processSmartArrivals(group, matchDetails) {
         }
         if (boxOffEl) boxOffEl.style.display = (primaryEta.mins === primaryEta.rawMins && primaryEta.type==='live') ? 'none' : 'flex';
 
-        // Occupancy calculation for primary ETA
-        const { pct, activeBars } = calculateOccupancy(group.routeNo, group.dest_e, combinedArrivals.map(c => c.arrival), primaryEta.itemInfo.targetIndex, primaryEta.itemInfo.totalStops, now);
-        let colorClass = pct > 85 ? 'active-red' : (pct > 65 ? 'active-orange' : 'active-green');
-        let barHtml = '';
-        for (let i = 1; i <= 10; i++) barHtml += `<div class="segment ${i <= activeBars ? colorClass : ''}"></div>`;
-        document.getElementById(`bars-${groupKey}`).innerHTML = barHtml;
-        occSecEl.style.display = 'flex';
+        if (primaryEta.itemInfo) {
+            const { pct, activeBars } = calculateOccupancy(group.routeNo, group.dest_e, combinedArrivals.map(c => c.arrival), primaryEta.itemInfo.targetIndex, primaryEta.itemInfo.totalStops, now);
+            let colorClass = pct > 85 ? 'active-red' : (pct > 65 ? 'active-orange' : 'active-green');
+            let barHtml = '';
+            for (let i = 1; i <= 10; i++) barHtml += `<div class="segment ${i <= activeBars ? colorClass : ''}"></div>`;
+            document.getElementById(`bars-${groupKey}`).innerHTML = barHtml;
+            occSecEl.style.display = 'flex';
+        }
     }
 
-    // Secondary UI Update (Expanded List)
     if (expContainer) {
         let expHtml = '';
         for (let i = 1; i < finalEtasList.length; i++) {
