@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Pulse NLB - Hybrid Engine</title>
+<title>Pulse Transport - Hybrid Engine</title>
 <style>
   :root {
     --bg-color: #121214;
@@ -88,6 +88,8 @@
   .route-meta-container { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
   .meta-tag { background: #2c2c2e; border: 1px solid #3a3a3c; border-radius: 4px; padding: 2px 6px; font-size: 0.65rem; color: #a1a1aa; font-weight: 600; display: flex; align-items: center; gap: 3px; }
   .meta-tag.fare { color: #30d158; }
+  .meta-tag.fare.drop { background: rgba(48, 209, 88, 0.15); border-color: rgba(48, 209, 88, 0.4); }
+  .meta-tag.warning { color: var(--accent-orange); background: rgba(255, 159, 10, 0.15); border-color: rgba(255, 159, 10, 0.4); }
 
   .eta-container { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
   .eta-box { display: flex; flex-direction: column; align-items: flex-end; min-width: 42px; }
@@ -124,7 +126,7 @@
 <div class="header">
   <div class="header-left">
     <div class="title-row">
-      <h1>Pulse NLB</h1>
+      <h1>Pulse Transport</h1>
       <span class="build-badge" id="buildVersion"></span>
     </div>
     <span class="clock" id="liveClock">--:--:--</span>
@@ -161,7 +163,7 @@
 const API_BASE = 'https://rt.data.gov.hk/v2/transport/nlb';
 const REFRESH_INTERVAL = 15; 
 const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
-const APP_VERSION = "v.1030_HYBRID";
+const APP_VERSION = "v.1031_HYBRID_CORE";
 
 // Add filenames of static route files you create here.
 // The engine will dynamically load them on boot.
@@ -274,7 +276,7 @@ function fuseStaticWithDynamicData() {
       // Save matched meta info against the API's routeId
       staticEngineMeta[dRoute.routeId] = matchedStatic;
 
-      // Enhance Stop Lat/Long precision
+      // Enhance Stop Lat/Long precision and inject new advanced metadata
       const dStops = routeStopsCache[dRoute.routeId];
       if (dStops) {
         dStops.forEach(dStop => {
@@ -285,7 +287,14 @@ function fuseStaticWithDynamicData() {
           if (sStop) {
             dStop.latitude = sStop.latitude; // Override API coord with precision static coord
             dStop.longitude = sStop.longitude;
-            dStop.staticFare = sStop.weekdayFare; // Store fare on stop for future
+            
+            // Map the advanced metadata from your updated route files
+            dStop.staticFare = sStop.sectionFare !== undefined ? sStop.sectionFare : matchedStatic.fullFare; 
+            dStop.hasSectionFareDrop = sStop.hasSectionFareDrop || false;
+            dStop.bottleneckRisk = sStop.bottleneckRisk || false;
+            dStop.isIntermediateTerminal = sStop.isIntermediateTerminal || false;
+            dStop.omittedHours = sStop.omittedHours || [];
+            dStop.segmentTimeSec = sStop.segmentTimeSec || 0;
           }
         });
       }
@@ -631,11 +640,26 @@ async function updateNetworkTelemetry() {
       // Fetch Static Meta Data for UI enhancements
       const staticMeta = staticEngineMeta[group.routeIds[0]];
       let metaHtml = '';
+      
       if (staticMeta) {
+        // Find the specific stop data for where the user is standing right now
+        const currentStopData = routeStopsCache[group.routeIds[0]]?.find(s => s.stopName_e === currentStopName_e);
+        
+        // Determine exact fare (Section fare if available, otherwise full fare)
+        const displayFare = currentStopData?.staticFare || staticMeta.fullFare;
+        const fareTagClass = currentStopData?.hasSectionFareDrop ? "meta-tag fare drop" : "meta-tag fare";
+        
+        // Check for bottleneck warnings
+        const bottleneckTag = currentStopData?.bottleneckRisk 
+            ? `<div class="meta-tag warning">⚠️ Traffic Risk</div>` 
+            : '';
+
+        // Render the UI
         metaHtml = `<div class="route-meta-container" id="meta-${group.key}">
-          ${staticMeta.fullFare ? `<div class="meta-tag fare">💰 $${staticMeta.fullFare}</div>` : ''}
+          ${displayFare ? `<div class="${fareTagClass}">💰 $${displayFare}</div>` : ''}
           ${staticMeta.frequencyMins ? `<div class="meta-tag">⏱ ${staticMeta.frequencyMins}m</div>` : ''}
           ${staticMeta.serviceHours ? `<div class="meta-tag">🕑 ${staticMeta.serviceHours.weekdays.split('-')[0].trim()}</div>` : ''}
+          ${bottleneckTag}
         </div>`;
       }
 
@@ -732,7 +756,6 @@ async function processSmartArrivals(group, matchDetails) {
             upstreamEtaRes,
             targetIndex: m.targetIndex,
             totalStops: m.stops.length,
-            // Tagging meta to the arrival object for the engine logic below
             metaId: m.routeId 
           });
         });
@@ -772,8 +795,6 @@ async function processSmartArrivals(group, matchDetails) {
            const timeSinceLost = now - activeState.timestamp;
            
            // STATIC DATA ENGINE VALUE ADD: Retrieve Frequency for the Anchor logic
-           // If we know this route only comes every 60 mins, we should hold onto the drop-off gap 
-           // differently than a route that comes every 15 mins.
            let freqMaxMinutes = 30; // default fallback
            if (matchDetails.length > 0) {
                const meta = staticEngineMeta[matchDetails[0].routeId];
@@ -795,7 +816,6 @@ async function processSmartArrivals(group, matchDetails) {
            
            if (activeState.isScheduled) {
                // Hold based on actual route frequency instead of hardcoded 8 mins
-               // E.g., if frequency is 60m, hold for up to 12 mins.
                const maxScheduledHold = Math.min(freqMaxMinutes * 0.2 * 60000, 720000); 
 
                if (timeSinceLost < maxScheduledHold && nextBusEta > 10) { 
@@ -819,8 +839,6 @@ async function processSmartArrivals(group, matchDetails) {
            } else {
                // GPS drop logic adjusted by static frequency
                const timeSpentAtZero = activeState.firstZeroTime ? (now - activeState.firstZeroTime) : 0;
-               
-               // Value Add: dynamically set missing time buffer. Long headways > larger buffer allowed.
                const maxMissingTime = (nextBusEta > 15) ? Math.min(freqMaxMinutes * 2500, 180000) : 75000;
                
                if (timeSpentAtZero > 45000 || timeSinceLost > maxMissingTime) { 
