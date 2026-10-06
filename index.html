@@ -163,7 +163,7 @@
 const API_BASE = 'https://rt.data.gov.hk/v2/transport/nlb';
 const REFRESH_INTERVAL = 15; 
 const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
-const APP_VERSION = "v.1031_HYBRID_CORE";
+const APP_VERSION = "v.1032_HYBRID_PATH";
 
 // Add filenames of static route files you create here.
 // The engine will dynamically load them on boot.
@@ -245,8 +245,8 @@ async function bootStaticEngine() {
   const promises = STATIC_FILES_TO_LOAD.map(routeNo => {
     return new Promise((resolve) => {
       const script = document.createElement('script');
-      // Adjust path if your structure is different
-      script.src = `/routes/nlb/${routeNo.toLowerCase()}.js`; 
+      // Updated path to match the GitHub repository structure
+      script.src = `NLB/${routeNo}.js`; 
       script.onload = resolve;
       script.onerror = resolve; // Always resolve to not break the boot sequence
       document.head.appendChild(script);
