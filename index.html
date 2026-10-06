@@ -180,7 +180,7 @@
 const API_BASE = 'https://rt.data.gov.hk/v2/transport/nlb';
 const REFRESH_INTERVAL = 15; 
 const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
-const APP_VERSION = "v.1034_JSON_PRECISION";
+const APP_VERSION = "v.1035_JSON_FIX";
 
 // JSON File loader
 const STATIC_FILES_TO_LOAD = ['1', '2', '34', '36']; 
@@ -564,7 +564,6 @@ function getFutureSchedules(staticMeta, neededCount, existingEtas, currentStopDa
     const now = new Date();
     const day = now.getDay();
     
-    // Core Upgrade 2: High-precision Day-Specific Timetable Matching
     let scheduleArray = [];
     if (day === 0) {
         scheduleArray = staticMeta.timetable['sun_and_holidays'];
@@ -577,7 +576,6 @@ function getFutureSchedules(staticMeta, neededCount, existingEtas, currentStopDa
 
     let additionalEtas = [];
     
-    // Core Upgrade 1: Cumulative Segment Time Calculation
     let cumulativeOffsetSec = 0;
     if (currentStopData && staticMeta.stops) {
         for (const s of staticMeta.stops) {
@@ -592,7 +590,6 @@ function getFutureSchedules(staticMeta, neededCount, existingEtas, currentStopDa
     for (let timeStr of scheduleArray) {
         const cleanTime = timeStr.split(' ')[0];
         
-        // Skip omitted hours specific to this stop
         if (currentStopData && currentStopData.omittedHours && currentStopData.omittedHours.includes(cleanTime)) {
             continue;
         }
@@ -601,10 +598,8 @@ function getFutureSchedules(staticMeta, neededCount, existingEtas, currentStopDa
         let schedDate = new Date(now);
         schedDate.setHours(hrs, mins, 0, 0);
         
-        // Add exact cumulative offset to simulate time to reach this specific stop
         schedDate.setSeconds(schedDate.getSeconds() + cumulativeOffsetSec);
 
-        // Handle past midnight edge cases
         if (hrs < 4 && now.getHours() > 20) schedDate.setDate(schedDate.getDate() + 1);
         if (hrs > 20 && now.getHours() < 4) schedDate.setDate(schedDate.getDate() - 1);
 
@@ -672,7 +667,6 @@ async function processSmartArrivals(group, matchDetails) {
 
     const staticMeta = staticEngineMeta[matchDetails[0].routeId];
     
-    // Validate API Drops against Offline Frequency Meta
     if (busStateMap[groupKey] && (busStateMap[groupKey].isScheduled || (busStateMap[groupKey].filter && busStateMap[groupKey].filter.x <= 3))) {
        const activeState = busStateMap[groupKey];
        let isBusStillThere = false;
@@ -703,10 +697,13 @@ async function processSmartArrivals(group, matchDetails) {
        }
     }
 
-    // High-Precision Upstream Tracking Integration
     if (finalEtasList.length > 0 && finalEtasList[0].type === 'live' && !finalEtasList[0].isGhost) {
         const primaryItem = finalEtasList[0].itemInfo;
-        const state = busStateMap[groupKey] || { filter: new KalmanFilter1D(0.1, 2.0, primaryItem.rawMins, 1.0), timestamp: now };
+        
+        let state = busStateMap[groupKey];
+        if (!state || !state.filter) {
+            state = { filter: new KalmanFilter1D(0.1, 2.0, finalEtasList[0].rawMins, 1.0), timestamp: now };
+        }
         
         let validUpstreamBus = null;
         let upstreamEtaMins = 0;
@@ -715,17 +712,16 @@ async function processSmartArrivals(group, matchDetails) {
                 const uArrTime = new Date(uBus.estimatedArrivalTime.replace(/-/g, '/'));
                 const uServerTime = new Date(uBus.generateTime.replace(/-/g, '/'));
                 const uEtaMins = Math.max(0, Math.floor((uArrTime - uServerTime) / 60000));
-                if (Math.abs(primaryItem.rawMins - uEtaMins) <= 15) { validUpstreamBus = uBus; upstreamEtaMins = uEtaMins; break; }
+                if (Math.abs(finalEtasList[0].rawMins - uEtaMins) <= 15) { validUpstreamBus = uBus; upstreamEtaMins = uEtaMins; break; }
             }
         }
         
-        // Core Upgrade 3: Use JSON segmentTimeSec instead of Haversine GPS formula
         if (validUpstreamBus) {
             let minTransitMins = 1.0;
             if (currentStopData && currentStopData.segmentTimeSec) {
                 minTransitMins = currentStopData.segmentTimeSec / 60;
             }
-            if (primaryItem.rawMins < upstreamEtaMins + Math.floor(minTransitMins)) {
+            if (finalEtasList[0].rawMins < upstreamEtaMins + Math.floor(minTransitMins)) {
                 finalEtasList[0].mins = Math.ceil(upstreamEtaMins + minTransitMins);
             }
         }
