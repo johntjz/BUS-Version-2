@@ -246,12 +246,12 @@
 const NLB_API_BASE = 'https://rt.data.gov.hk/v2/transport/nlb';
 const KMB_API_BASE = 'https://data.etabus.gov.hk/v1/transport/kmb';
 const CTB_API_BASE = 'https://rt.data.gov.hk/v2/transport/citybus';
-const GMB_API_BASE = 'https://data.etabus.gov.hk/v1/transport/minibus';
+const GMB_API_BASE = 'https://data.etagmb.gov.hk';
 const REFRESH_INTERVAL = 15; 
 const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
-// APP TIMESTAMP UPDATED
-const APP_TIMESTAMP = "Patch: 2026-10-07 10:30 HKT";
+// STRICT TIMESTAMP UPDATED TO CONTEXTUAL LOCAL TIME
+const APP_TIMESTAMP = "Patch: 2026-10-07 10:38 HKT";
 const vEl = document.getElementById("buildVersion");
 if (vEl) vEl.innerText = APP_TIMESTAMP;
 
@@ -321,8 +321,8 @@ let showInactive = false;
 let favStops = [];
 try {
     const rawFavs = localStorage.getItem('pulse_fav_stops');
-    favStops = rawFavs ? JSON.parse(rawFavs) : [];
-    if (!Array.isArray(favStops)) favStops = [];
+    const parsed = rawFavs ? JSON.parse(rawFavs) : [];
+    favStops = Array.isArray(parsed) ? parsed : [];
 } catch(e) { favStops = []; }
 
 let autoGpsEnabled = true;
@@ -428,7 +428,8 @@ async function initApp() {
     const loadingEl = document.getElementById('loadingText');
     if (loadingEl) loadingEl.innerText = getT('loadingIndex');
     
-    const CACHE_KEY = 'pulse_cache_v11';
+    // Cache Key Bumped to handle strict typing
+    const CACHE_KEY = 'pulse_cache_v12';
     const cachedGrouped = localStorage.getItem(`${CACHE_KEY}_grouped`);
     const cachedStops = localStorage.getItem(`${CACHE_KEY}_stops`);
     const cacheTime = localStorage.getItem(`${CACHE_KEY}_time`);
@@ -551,7 +552,6 @@ async function initApp() {
 
       // 3. Fetch Citybus (CTB) & GMB Route Index ONLY (Lazy Loaded GPS Data)
       try {
-          // GMB API Region IDs: 1 (HKI), 2 (KLN), 3 (NT)
           const [ctbRes, gmbHki, gmbKln, gmbNt] = await Promise.all([
               fetch(`${CTB_API_BASE}/route/ctb`).then(r=>r.json()).catch(()=>null),
               fetch(`${GMB_API_BASE}/route/1`).then(r=>r.json()).catch(()=>null),
@@ -724,8 +724,8 @@ async function lazyLoadRoute(group) {
         if (!group.isLazyLoad) {
             buildAllStopsList();
             try {
-                localStorage.setItem('pulse_stops_v11', JSON.stringify(routeStopsCache));
-                localStorage.setItem('pulse_grouped_routes_v11', JSON.stringify(groupedRoutes));
+                localStorage.setItem('pulse_stops_v12', JSON.stringify(routeStopsCache));
+                localStorage.setItem('pulse_grouped_routes_v12', JSON.stringify(groupedRoutes));
             } catch(e){}
         }
     } catch(e) { console.warn("Lazy load failed", e); }
