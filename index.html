@@ -250,8 +250,8 @@ const GMB_API_BASE = 'https://data.etabus.gov.hk/v1/transport/minibus';
 const REFRESH_INTERVAL = 15; 
 const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
-// STRICT TIMESTAMP UPDATED TO CONTEXTUAL LOCAL TIME
-const APP_TIMESTAMP = "Patch: 2026-10-07 10:24 HKT";
+// APP TIMESTAMP UPDATED
+const APP_TIMESTAMP = "Patch: 2026-10-07 10:30 HKT";
 const vEl = document.getElementById("buildVersion");
 if (vEl) vEl.innerText = APP_TIMESTAMP;
 
@@ -316,8 +316,9 @@ let groupedRoutes = [];
 let routeStopsCache = {};
 const busStateMap = {}; 
 let showInactive = false;
-let favStops = [];
 
+// SAFE FAV STOPS INITIALIZATION (FIXED SYNTAX ERROR)
+let favStops = [];
 try {
     const rawFavs = localStorage.getItem('pulse_fav_stops');
     favStops = rawFavs ? JSON.parse(rawFavs) : [];
@@ -427,8 +428,7 @@ async function initApp() {
     const loadingEl = document.getElementById('loadingText');
     if (loadingEl) loadingEl.innerText = getT('loadingIndex');
     
-    // Cache Key Bumped to handle strict typing
-    const CACHE_KEY = 'pulse_cache_v10';
+    const CACHE_KEY = 'pulse_cache_v11';
     const cachedGrouped = localStorage.getItem(`${CACHE_KEY}_grouped`);
     const cachedStops = localStorage.getItem(`${CACHE_KEY}_stops`);
     const cacheTime = localStorage.getItem(`${CACHE_KEY}_time`);
@@ -551,11 +551,12 @@ async function initApp() {
 
       // 3. Fetch Citybus (CTB) & GMB Route Index ONLY (Lazy Loaded GPS Data)
       try {
+          // GMB API Region IDs: 1 (HKI), 2 (KLN), 3 (NT)
           const [ctbRes, gmbHki, gmbKln, gmbNt] = await Promise.all([
               fetch(`${CTB_API_BASE}/route/ctb`).then(r=>r.json()).catch(()=>null),
-              fetch(`${GMB_API_BASE}/route/HKI`).then(r=>r.json()).catch(()=>null),
-              fetch(`${GMB_API_BASE}/route/KLN`).then(r=>r.json()).catch(()=>null),
-              fetch(`${GMB_API_BASE}/route/NT`).then(r=>r.json()).catch(()=>null)
+              fetch(`${GMB_API_BASE}/route/1`).then(r=>r.json()).catch(()=>null),
+              fetch(`${GMB_API_BASE}/route/2`).then(r=>r.json()).catch(()=>null),
+              fetch(`${GMB_API_BASE}/route/3`).then(r=>r.json()).catch(()=>null)
           ]);
 
           if (ctbRes && Array.isArray(ctbRes.data)) {
@@ -598,7 +599,7 @@ async function initApp() {
         localStorage.setItem(`${CACHE_KEY}_grouped`, JSON.stringify(groupedRoutes));
         localStorage.setItem(`${CACHE_KEY}_stops`, JSON.stringify(routeStopsCache));
         localStorage.setItem(`${CACHE_KEY}_time`, Date.now().toString());
-      } catch (e) {} // Silently ignore quota exceeded
+      } catch (e) {} 
     }
     
     buildAllStopsList();
@@ -723,8 +724,8 @@ async function lazyLoadRoute(group) {
         if (!group.isLazyLoad) {
             buildAllStopsList();
             try {
-                localStorage.setItem('pulse_stops_v10', JSON.stringify(routeStopsCache));
-                localStorage.setItem('pulse_grouped_routes_v10', JSON.stringify(groupedRoutes));
+                localStorage.setItem('pulse_stops_v11', JSON.stringify(routeStopsCache));
+                localStorage.setItem('pulse_grouped_routes_v11', JSON.stringify(groupedRoutes));
             } catch(e){}
         }
     } catch(e) { console.warn("Lazy load failed", e); }
