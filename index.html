@@ -333,8 +333,7 @@ const SPONGE_STOPS = {
   }
 };
 
-// AI NOTE: Build timestamp updated to current time.
-const APP_TIMESTAMP = "Build: 2026-10-08 02:56 PM";
+const APP_TIMESTAMP = "Build: 2026-10-08 03:09 PM";
 const vEl = document.getElementById("buildVersion");
 if (vEl) vEl.innerText = APP_TIMESTAMP;
 
@@ -409,7 +408,7 @@ let routeStopsCache = {};
 const busStateMap = {}; 
 let showInactive = false;
 let showTerminating = false;
-let favStops = JSON.parse(localStorage.getItem('pulse_fav_stops_v2') || '[]');
+let favStops = JSON.parse(localStorage.getItem('pulse_fav_stops_v10') || '[]');
 
 let autoGpsEnabled = true;
 let lastKnownPos = null;
@@ -484,7 +483,6 @@ function getDirectionColor(dest) {
   if (d.includes('mui wo')) return 'var(--dir-purple)';
   if (d.includes('tai o') || d.includes('kowloon') || d.includes('tsim sha tsui')) return 'var(--dir-cyan)';
   if (d.includes('airport') || d.includes('gtc') || d.includes('hzmb') || d.includes('macao')) return 'var(--dir-indigo)';
-  // Adjusted for Yuen Long & GMB Stops
   if (d.includes('yuen long') || d.includes('tuen mun') || d.includes('fuk shun') || d.includes('fook hong') || d.includes('shing uk')) return 'var(--accent-orange)';
   if (d.includes('tong fuk') || d.includes('causeway bay') || d.includes('tin hau')) return 'var(--dir-pink)';
   return 'var(--card-border)';
@@ -530,16 +528,27 @@ async function fetchJSON(url) {
 
 async function initApp() {
   try {
-    const cachedGrouped = localStorage.getItem('pulse_grouped_routes_v9');
-    const cachedStops = localStorage.getItem('pulse_stops_v9');
-    const cacheTime = localStorage.getItem('pulse_cache_time_v9');
+    const cachedGrouped = localStorage.getItem('pulse_grouped_routes_v10');
+    const cachedStops = localStorage.getItem('pulse_stops_v10');
+    const cacheTime = localStorage.getItem('pulse_cache_time_v10');
     const now = Date.now(); 
 
+    let useCache = false;
+    
+    // FIX: Catch Storage Syntax Errors to prevent the fake "Network Error" loop
     if (cachedGrouped && cachedStops && cacheTime && (now - parseInt(cacheTime) < CACHE_EXPIRY_MS)) {
-      setLoadProgress(100, "Loading from cache...");
-      groupedRoutes = JSON.parse(cachedGrouped);
-      routeStopsCache = JSON.parse(cachedStops);
-    } else {
+        try {
+            groupedRoutes = JSON.parse(cachedGrouped);
+            routeStopsCache = JSON.parse(cachedStops);
+            useCache = true;
+            setLoadProgress(100, "Loading from cache...");
+        } catch(e) {
+            useCache = false; 
+            console.log("Cache corrupted, redownloading...");
+        }
+    } 
+
+    if (!useCache) {
       setLoadProgress(5, "Fetching NLB Routes...");
       
       const groupedMap = new Map();
@@ -645,9 +654,6 @@ async function initApp() {
           }
       } catch(e) { console.error("KMB/LWB Fetch failed", e); }
 
-      // ==========================================
-      // WHITELIST FETCH: GMB Route 74
-      // ==========================================
       try {
           setLoadProgress(90, "Whitelisting GMB 74...");
           const gmbRes = await fetchJSON(`${GMB_API_BASE}/route/NT/74`);
@@ -667,7 +673,6 @@ async function initApp() {
                           const routeIdKey = `GMB_${rId}_${rSeq}`;
                           const cleanDestE = formatStopName(cleanStopName(dest_en));
                           
-                          // Fetch stops in parallel
                           const stopPromises = routeStopRes.data.map(async (rs) => {
                               try {
                                   const sDetail = await fetchJSON(`${GMB_API_BASE}/stop/${rs.stop_id}`);
@@ -710,9 +715,9 @@ async function initApp() {
       groupedRoutes = Array.from(groupedMap.values());
 
       try {
-        localStorage.setItem('pulse_grouped_routes_v9', JSON.stringify(groupedRoutes));
-        localStorage.setItem('pulse_stops_v9', JSON.stringify(routeStopsCache));
-        localStorage.setItem('pulse_cache_time_v9', Date.now().toString());
+        localStorage.setItem('pulse_grouped_routes_v10', JSON.stringify(groupedRoutes));
+        localStorage.setItem('pulse_stops_v10', JSON.stringify(routeStopsCache));
+        localStorage.setItem('pulse_cache_time_v10', Date.now().toString());
       } catch (e) {}
       
       setLoadProgress(100, "Network Sync Complete");
@@ -721,8 +726,8 @@ async function initApp() {
     buildAllStopsList();
 
     // Data Migration Script
-    let legacyFavs = localStorage.getItem('pulse_fav_stops_v2') || localStorage.getItem('pulse_fav_stops');
-    if (legacyFavs && !localStorage.getItem('pulse_fav_stops_v9')) {
+    let legacyFavs = localStorage.getItem('pulse_fav_stops_v9') || localStorage.getItem('pulse_fav_stops_v2') || localStorage.getItem('pulse_fav_stops');
+    if (legacyFavs && !localStorage.getItem('pulse_fav_stops_v10')) {
         try {
             let parsedLegacy = JSON.parse(legacyFavs);
             let migratedFavs = [];
@@ -731,21 +736,21 @@ async function initApp() {
                 if (match) migratedFavs.push(match.stopKey);
             });
             favStops = migratedFavs;
-            localStorage.setItem('pulse_fav_stops_v9', JSON.stringify(favStops));
+            localStorage.setItem('pulse_fav_stops_v10', JSON.stringify(favStops));
         } catch(e) {}
     } else {
-        favStops = JSON.parse(localStorage.getItem('pulse_fav_stops_v9') || '[]');
+        favStops = JSON.parse(localStorage.getItem('pulse_fav_stops_v10') || '[]');
     }
 
-    let legacyCurrentStop = localStorage.getItem('pulse_stop_key') || localStorage.getItem('pulse_stop');
-    if (legacyCurrentStop && !localStorage.getItem('pulse_stop_key_v9')) {
+    let legacyCurrentStop = localStorage.getItem('pulse_stop_key_v9') || localStorage.getItem('pulse_stop_key') || localStorage.getItem('pulse_stop');
+    if (legacyCurrentStop && !localStorage.getItem('pulse_stop_key_v10')) {
          let match = allStops.find(s => s.stopName_e === legacyCurrentStop || s.stopKey === legacyCurrentStop);
          if (match) {
-             localStorage.setItem('pulse_stop_key_v9', match.stopKey);
+             localStorage.setItem('pulse_stop_key_v10', match.stopKey);
          }
     }
     
-    const savedStop = localStorage.getItem('pulse_stop_key_v9');
+    const savedStop = localStorage.getItem('pulse_stop_key_v10');
     const savedRoute = localStorage.getItem('pulse_route');
     
     if (savedRoute) currentRouteKey = savedRoute;
@@ -820,7 +825,7 @@ function updateRouteSelectText() {
         el.innerText = getT('allLines');
     } else {
         const targetGroup = groupedRoutes.find(g => g.key === currentRouteKey);
-        el.innerText = targetGroup ? `${targetGroup.company === 'KMB' ? '[KMB] ' : (targetGroup.company === 'LWB' ? '[LWB] ' : '')}${targetGroup.routeNo} (${getT('to')} ${getLocalizedName(targetGroup, 'dest')})` : getT('allLines');
+        el.innerText = targetGroup ? `${targetGroup.company === 'KMB' ? '[KMB] ' : (targetGroup.company === 'LWB' ? '[LWB] ' : (targetGroup.company === 'GMB' ? '[GMB] ' : ''))}${targetGroup.routeNo} (${getT('to')} ${getLocalizedName(targetGroup, 'dest')})` : getT('allLines');
     }
 }
 
@@ -975,7 +980,7 @@ function selectModalItem(type, value) {
         const targetStops = (currentRouteKey === 'ALL') ? allStops : getStopsForGroup(groupedRoutes.find(g => g.key === currentRouteKey));
         if (targetStops.length > 0 && !targetStops.some(s => s.stopKey === currentStopKey)) {
             currentStopKey = targetStops[0].stopKey;
-            localStorage.setItem('pulse_stop_key_v9', currentStopKey);
+            localStorage.setItem('pulse_stop_key_v10', currentStopKey);
             updateStopSelectText();
         }
         
@@ -988,7 +993,7 @@ function selectModalItem(type, value) {
         document.getElementById('gpsStatus').innerText = getT('manual');
         
         currentStopKey = value;
-        localStorage.setItem('pulse_stop_key_v9', currentStopKey);
+        localStorage.setItem('pulse_stop_key_v10', currentStopKey);
         updateStopSelectText();
         resetAndFetch();
     }
@@ -1007,7 +1012,7 @@ function toggleFavorite() {
         favStops.push(currentStopKey);
         msgEl.innerText = getT('favAdded');
     }
-    localStorage.setItem('pulse_fav_stops_v9', JSON.stringify(favStops));
+    localStorage.setItem('pulse_fav_stops_v10', JSON.stringify(favStops));
     updateFavButtonUI();
     setTimeout(() => { if (msgEl.innerText) msgEl.innerText = ''; }, 3000);
 }
@@ -1067,7 +1072,7 @@ function locateNearestStopPromise(isManualClick = false) {
                 
                 if (closest.stopKey !== currentStopKey) {
                     currentStopKey = closest.stopKey;
-                    localStorage.setItem('pulse_stop_key_v9', currentStopKey);
+                    localStorage.setItem('pulse_stop_key_v10', currentStopKey);
                     updateStopSelectText();
                     for (let key in busStateMap) delete busStateMap[key];
                     resolve(true); 
