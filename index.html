@@ -82,21 +82,44 @@
   .location-text { font-size: 1.1rem; font-weight: 700; color: var(--text-main); }
   .refresh-timer { font-size: 1.05rem; color: var(--kmb-red); font-weight: 800; font-variant-numeric: tabular-nums; }
 
-  /* Route List Item */
+  /* Route List Item - Fixed Layout & No Overlap */
   .route-list-item {
-    display: flex; padding: 20px 16px; border-bottom: 1px solid var(--border-color);
-    align-items: center; gap: 14px; cursor: pointer; background: var(--bg-light);
+    display: flex; padding: 18px 16px; border-bottom: 1px solid var(--border-color);
+    align-items: center; gap: 16px; cursor: pointer; background: var(--bg-light);
     transition: background 0.2s;
   }
   .route-list-item.inactive-route { opacity: 0.85; }
   .route-list-item:active { background: var(--bg-white); }
-  .route-no-col { width: 65px; font-size: 2.2rem; font-weight: 900; text-align: center; color: var(--text-main); letter-spacing: -1px; }
-  .route-info-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; justify-content: center; }
-  .route-dest { font-size: 1.25rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
-  .route-sub { font-size: 0.9rem; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
   
-  .route-eta-col { text-align: right; min-width: 80px; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
-  .eta-time { font-size: 2.4rem; font-weight: 900; color: var(--accent-green); font-variant-numeric: tabular-nums; line-height: 1; }
+  .route-no-col {
+    min-width: 95px;
+    max-width: 105px;
+    flex-shrink: 0;
+    font-size: 1.85rem;
+    font-weight: 900;
+    text-align: left;
+    color: var(--text-main);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+    word-break: break-word;
+  }
+  
+  .route-info-col {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; justify-content: center;
+  }
+  .route-dest {
+    font-size: 1.2rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main);
+  }
+  .route-sub {
+    font-size: 0.85rem; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
+  }
+  
+  .route-eta-col {
+    text-align: right; min-width: 80px; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; justify-content: center;
+  }
+  .eta-time {
+    font-size: 2.3rem; font-weight: 900; color: var(--accent-green); font-variant-numeric: tabular-nums; line-height: 1;
+  }
   
   /* ETA Expansion Area */
   .eta-expanded-container {
@@ -184,7 +207,7 @@
   .del-fav-btn {
       background: rgba(227, 24, 55, 0.15); border: 1px solid rgba(227, 24, 55, 0.3);
       color: var(--kmb-red); border-radius: 8px; padding: 14px 18px; font-size: 1.2rem;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
 
   /* Fav Add Modal Overlay */
@@ -212,7 +235,7 @@
   .fav-modal-search input:focus { border-color: var(--accent-blue); outline: none; }
   .fav-modal-results { flex: 1; overflow-y: auto; background: var(--bg-light); }
 
-  /* Map Tile Dark Mode Fix (Invert standard OpenStreetMap) */
+  /* Map Tile Dark Mode Fix */
   .dark-tiles {
       filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
   }
@@ -282,7 +305,7 @@
   <div id="favList" style="flex:1; overflow-y:auto;"></div>
 </main>
 
-<!-- Route Detail View (Hidden from Tabs, accessible via clicking a route) -->
+<!-- Route Detail View -->
 <main id="view-detail" class="view-container">
   <div id="map-container"></div>
   <div id="stop-list-container"></div>
@@ -337,7 +360,7 @@ let previousView = 'main';
 let allStops = [];
 let groupedRoutes = []; 
 let routeStopsCache = {};
-let favRoutes = JSON.parse(localStorage.getItem('kmb_fav_routes_v6') || '[]');
+let favRoutes = JSON.parse(localStorage.getItem('kmb_fav_routes_v7') || '[]');
 
 let lastKnownPos = null;
 let currentNearestStopKey = null;
@@ -387,9 +410,9 @@ function setLoadProgress(pct, text) {
 
 async function initApp() {
   try {
-    const cachedGrouped = localStorage.getItem('kmb_grouped_v6');
-    const cachedStops = localStorage.getItem('kmb_stops_v6');
-    const cacheTime = localStorage.getItem('kmb_cache_time_v6');
+    const cachedGrouped = localStorage.getItem('kmb_grouped_v7');
+    const cachedStops = localStorage.getItem('kmb_stops_v7');
+    const cacheTime = localStorage.getItem('kmb_cache_time_v7');
     const now = Date.now(); 
 
     let loadedFromCache = false;
@@ -399,7 +422,7 @@ async function initApp() {
           groupedRoutes = JSON.parse(cachedGrouped);
           routeStopsCache = JSON.parse(cachedStops);
           loadedFromCache = true;
-      } catch (e) { localStorage.removeItem('kmb_cache_time_v6'); }
+      } catch (e) { localStorage.removeItem('kmb_cache_time_v7'); }
     } 
     
     if (!loadedFromCache) {
@@ -484,9 +507,9 @@ async function initApp() {
 
       groupedRoutes = Array.from(groupedMap.values());
       try {
-        localStorage.setItem('kmb_grouped_v6', JSON.stringify(groupedRoutes));
-        localStorage.setItem('kmb_stops_v6', JSON.stringify(routeStopsCache));
-        localStorage.setItem('kmb_cache_time_v6', Date.now().toString());
+        localStorage.setItem('kmb_grouped_v7', JSON.stringify(groupedRoutes));
+        localStorage.setItem('kmb_stops_v7', JSON.stringify(routeStopsCache));
+        localStorage.setItem('kmb_cache_time_v7', Date.now().toString());
       } catch (e) {}
     }
     
@@ -1080,7 +1103,7 @@ function renderFavList() {
 
 function removeFavRoute(key) {
     favRoutes = favRoutes.filter(k => k !== key);
-    localStorage.setItem('kmb_fav_routes_v6', JSON.stringify(favRoutes));
+    localStorage.setItem('kmb_fav_routes_v7', JSON.stringify(favRoutes));
     renderFavList();
 }
 
@@ -1129,7 +1152,7 @@ function renderFavSearch() {
 function addFavFromModal(key) {
     if(!favRoutes.includes(key)) {
         favRoutes.push(key);
-        localStorage.setItem('kmb_fav_routes_v6', JSON.stringify(favRoutes));
+        localStorage.setItem('kmb_fav_routes_v7', JSON.stringify(favRoutes));
     }
     closeFavModal();
     renderFavList();
