@@ -51,10 +51,6 @@
     align-items: center; justify-content: center; background: none; border: none; color: white;
     font-size: 2.2rem; font-weight: bold; cursor: pointer; padding: 0 16px;
   }
-  .header-actions {
-    position: absolute; right: 16px; top: 0; bottom: 0; display: flex; align-items: center; gap: 12px;
-  }
-  .fav-toggle-btn { background: none; border: none; color: white; font-size: 1.6rem; display: none; cursor: pointer; padding: 0 8px; }
 
   /* Views */
   .view-container {
@@ -110,8 +106,8 @@
   .eta-row { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px dashed var(--border-color); }
   .eta-row:last-child { border-bottom: none; }
   .eta-row-left { display: flex; align-items: center; gap: 16px; font-size: 1rem; color: var(--text-sub); }
-  .eta-row-seq { display: inline-block; width: 24px; font-weight: 900; color: var(--kmb-red); font-size: 1.4rem; }
-  .eta-row-time { font-size: 2.2rem; font-weight: 900; color: var(--text-main); font-variant-numeric: tabular-nums; }
+  .eta-row-seq { display: inline-block; width: 24px; font-weight: 900; color: var(--text-sub); font-size: 1.4rem; }
+  .eta-row-time { font-size: 2.2rem; font-weight: 900; font-variant-numeric: tabular-nums; }
 
   /* Search View */
   .search-box-container { padding: 16px; background: var(--bg-white); border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 14px; position: sticky; top: 0; z-index: 10;}
@@ -162,6 +158,10 @@
   
   /* Utilities & Status */
   .text-center { text-align: center; padding: 40px 20px; color: var(--text-sub); font-size: 1.15rem; }
+  .show-inactive-btn {
+    display: block; margin: 24px auto; padding: 14px 28px; border: 1px solid var(--border-color);
+    background: var(--bg-white); border-radius: 28px; font-size: 1.05rem; cursor: pointer; color: var(--text-main); font-weight: 700;
+  }
   .init-loader { padding: 80px 20px; text-align: center; }
   .progress-bar { width: 85%; height: 8px; background: #333; margin: 24px auto; border-radius: 4px; overflow: hidden; }
   .progress-fill { height: 100%; background: var(--kmb-red); width: 0%; transition: 0.3s; }
@@ -176,6 +176,7 @@
   .occ-standing { background: rgba(255, 159, 10, 0.2); color: var(--accent-orange); border: 1px solid rgba(255, 159, 10, 0.4); }
   .occ-full { background: rgba(227, 24, 55, 0.2); color: var(--kmb-red); border: 1px solid rgba(227, 24, 55, 0.4); }
 
+  /* Favorites Specfic */
   .add-fav-btn {
       margin: 24px; padding: 20px; background: var(--bg-white); border: 2px dashed var(--border-color);
       border-radius: 16px; text-align: center; color: var(--accent-blue); font-size: 1.25rem; font-weight: 800;
@@ -185,11 +186,36 @@
 
   .del-fav-btn {
       background: rgba(227, 24, 55, 0.15); border: 1px solid rgba(227, 24, 55, 0.3);
-      color: var(--kmb-red); border-radius: 8px; padding: 12px 16px; font-size: 1.2rem;
+      color: var(--kmb-red); border-radius: 8px; padding: 14px 18px; font-size: 1.2rem;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
   }
 
-  /* Map Tile Dark Mode Fix */
+  /* Fav Add Modal Overlay */
+  .fav-modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8); z-index: 2000;
+      display: none; justify-content: center; align-items: flex-end;
+  }
+  .fav-modal-content {
+      background: var(--bg-light); width: 100%; height: 90vh;
+      border-top-left-radius: 20px; border-top-right-radius: 20px;
+      display: flex; flex-direction: column; overflow: hidden;
+  }
+  .fav-modal-header {
+      padding: 20px; display: flex; justify-content: space-between; align-items: center;
+      background: var(--bg-white); border-bottom: 1px solid var(--border-color);
+  }
+  .fav-modal-header h3 { font-size: 1.25rem; font-weight: 800; margin: 0; color: var(--text-main); }
+  .fav-modal-close { background: none; border: none; color: var(--text-sub); font-size: 1.8rem; font-weight: bold; cursor: pointer; }
+  .fav-modal-search { padding: 16px; background: var(--bg-white); border-bottom: 1px solid var(--border-color); }
+  .fav-modal-search input {
+      width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px;
+      font-size: 1.2rem; background: var(--bg-light); color: var(--text-main); font-weight: 700; text-align: center;
+  }
+  .fav-modal-search input:focus { border-color: var(--accent-blue); outline: none; }
+  .fav-modal-results { flex: 1; overflow-y: auto; background: var(--bg-light); }
+
+  /* Map Tile Dark Mode Fix (Invert standard OpenStreetMap) */
   .dark-tiles {
       filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
   }
@@ -206,9 +232,6 @@
 <header class="header">
   <button class="back-btn" id="backBtn" onclick="navigateBack()">‹</button>
   <h1 id="headerTitle">Bus HK</h1>
-  <div class="header-actions">
-      <button class="fav-toggle-btn" id="favRouteBtn" onclick="toggleFavRoute(null)">☆</button>
-  </div>
 </header>
 
 <!-- Main / Nearby View -->
@@ -226,6 +249,7 @@
           <div class="progress-bar"><div class="progress-fill" id="loadBar"></div></div>
       </div>
   </div>
+  <button class="show-inactive-btn" id="toggleInactiveBtn" onclick="toggleInactive()" style="display:none;">Show Inactive Routes</button>
 </main>
 
 <!-- Search View -->
@@ -268,7 +292,7 @@
   <div id="stop-list-container"></div>
 </main>
 
-<!-- Bottom Tabs (Main, Search, Map, Favorites) -->
+<!-- Bottom Tabs -->
 <nav class="bottom-tabs">
   <div class="tab active" onclick="switchTab('main')" id="tab-main">
     <span class="tab-icon">🏠</span>
@@ -288,6 +312,20 @@
   </div>
 </nav>
 
+<!-- Favorite Add Modal -->
+<div id="fav-modal" class="fav-modal-overlay">
+    <div class="fav-modal-content">
+        <div class="fav-modal-header">
+            <h3>Add New Favorite</h3>
+            <button class="fav-modal-close" onclick="closeFavModal()">✕</button>
+        </div>
+        <div class="fav-modal-search">
+            <input type="text" id="favSearchInput" placeholder="Search route number..." oninput="renderFavSearch()" autocomplete="off">
+        </div>
+        <div id="favSearchResults" class="fav-modal-results"></div>
+    </div>
+</div>
+
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
@@ -303,7 +341,7 @@ let previousView = 'main';
 let allStops = [];
 let groupedRoutes = []; 
 let routeStopsCache = {};
-let favRoutes = JSON.parse(localStorage.getItem('kmb_fav_routes_v4') || '[]');
+let favRoutes = JSON.parse(localStorage.getItem('kmb_fav_routes_v5') || '[]');
 
 let lastKnownPos = null;
 let currentNearestStopKey = null;
@@ -314,8 +352,8 @@ let sheetExpandedGroupKey = null;
 // Map & Detail State
 let detailRouteGroup = null;
 let detailExpandedStopIdx = -1;
-let mapInstance = null; // Used for Detail View
-let globalMapInstance = null; // Used for Map Tab
+let mapInstance = null; 
+let globalMapInstance = null; 
 let mapRouteLayer = null;
 let mapMarkers = [];
 let globalMarkers = [];
@@ -326,6 +364,7 @@ let userMarkerGlobal = null;
 let countdown = REFRESH_INTERVAL;
 let timerInterval = null;
 let isSyncing = false;
+let showInactive = false;
 
 // --- Initialization & Data Fetching ---
 async function fetchJSON(url) {
@@ -353,9 +392,9 @@ function setLoadProgress(pct, text) {
 
 async function initApp() {
   try {
-    const cachedGrouped = localStorage.getItem('kmb_grouped_v4');
-    const cachedStops = localStorage.getItem('kmb_stops_v4');
-    const cacheTime = localStorage.getItem('kmb_cache_time_v4');
+    const cachedGrouped = localStorage.getItem('kmb_grouped_v5');
+    const cachedStops = localStorage.getItem('kmb_stops_v5');
+    const cacheTime = localStorage.getItem('kmb_cache_time_v5');
     const now = Date.now(); 
 
     let loadedFromCache = false;
@@ -365,7 +404,7 @@ async function initApp() {
           groupedRoutes = JSON.parse(cachedGrouped);
           routeStopsCache = JSON.parse(cachedStops);
           loadedFromCache = true;
-      } catch (e) { localStorage.removeItem('kmb_cache_time_v4'); }
+      } catch (e) { localStorage.removeItem('kmb_cache_time_v5'); }
     } 
     
     if (!loadedFromCache) {
@@ -450,14 +489,14 @@ async function initApp() {
 
       groupedRoutes = Array.from(groupedMap.values());
       try {
-        localStorage.setItem('kmb_grouped_v4', JSON.stringify(groupedRoutes));
-        localStorage.setItem('kmb_stops_v4', JSON.stringify(routeStopsCache));
-        localStorage.setItem('kmb_cache_time_v4', Date.now().toString());
+        localStorage.setItem('kmb_grouped_v5', JSON.stringify(groupedRoutes));
+        localStorage.setItem('kmb_stops_v5', JSON.stringify(routeStopsCache));
+        localStorage.setItem('kmb_cache_time_v5', Date.now().toString());
       } catch (e) {}
     }
     
     buildAllStopsList();
-    initDetailMap(); // Init only the detail map for now
+    initDetailMap(); 
     
     await locateNearestStopPromise();
     startTimer();
@@ -541,7 +580,6 @@ function locateNearestStopPromise() {
                 document.getElementById('mainLocationText').innerText = closest.stopName_e;
                 renderMainNearby();
                 
-                // If map tab is open, refresh stops
                 if (currentView === 'map' && globalMapInstance) {
                     renderGlobalMapStops();
                 }
@@ -575,7 +613,6 @@ function switchTab(tabId) {
     document.getElementById(`tab-${tabId}`).classList.add('active');
     
     document.getElementById('backBtn').style.display = 'none';
-    document.getElementById('favRouteBtn').style.display = 'none';
     document.getElementById('headerTitle').innerText = 'Bus HK';
     
     if (tabId === 'search') renderSearchResults();
@@ -608,10 +645,6 @@ function openRouteDetail(groupKey) {
     document.getElementById('backBtn').style.display = 'flex';
     document.getElementById('headerTitle').innerText = `${group.routeNo} To ${group.dest_e}`;
     
-    const favBtn = document.getElementById('favRouteBtn');
-    favBtn.style.display = 'block';
-    favBtn.innerText = favRoutes.includes(groupKey) ? '★' : '☆';
-
     setTimeout(() => {
         if(mapInstance) mapInstance.invalidateSize();
         drawRouteOnMap(group);
@@ -621,26 +654,6 @@ function openRouteDetail(groupKey) {
 
 function navigateBack() {
     switchTab(previousView);
-}
-
-function toggleFavRoute(explicitKey) {
-    const targetKey = explicitKey || (detailRouteGroup ? detailRouteGroup.key : null);
-    if (!targetKey) return;
-    
-    const idx = favRoutes.indexOf(targetKey);
-    if (idx > -1) favRoutes.splice(idx, 1);
-    else favRoutes.push(targetKey);
-    
-    localStorage.setItem('kmb_fav_routes_v4', JSON.stringify(favRoutes));
-    
-    if (detailRouteGroup && detailRouteGroup.key === targetKey) {
-        document.getElementById('favRouteBtn').innerText = favRoutes.includes(targetKey) ? '★' : '☆';
-    }
-    
-    // If we are currently in Favorites view, re-render it
-    if (currentView === 'fav') {
-        renderFavList();
-    }
 }
 
 // --- Map Logic ---
@@ -701,13 +714,11 @@ function drawRouteOnMap(group) {
 function renderGlobalMapStops() {
     if (!globalMapInstance || !lastKnownPos) return;
     
-    // Clear old global markers
     globalMarkers.forEach(m => globalMapInstance.removeLayer(m));
     globalMarkers = [];
     
     const stopIcon = L.divIcon({ className: 'custom-stop-icon', html: '<div style="width:16px;height:16px;background:white;border:4px solid var(--kmb-red);border-radius:50%; box-shadow: 0 0 6px rgba(0,0,0,0.5);"></div>', iconSize: [16, 16] });
     
-    // Find stops within 500m (0.5km)
     let nearby = allStops.filter(s => calculateDistanceKm(lastKnownPos.lat, lastKnownPos.lon, parseFloat(s.latitude), parseFloat(s.longitude)) <= 0.8);
     
     nearby.forEach(s => {
@@ -804,7 +815,7 @@ async function toggleSheetEta(groupKey, stopKey) {
         if(group) {
             try {
                 const arrs = await fetchEtaRaw(group, stopKey);
-                renderExpandedETAs(arrs, group, stopKey, `sheet-eta-expanded-${groupKey}`);
+                expandContainer.innerHTML = generateExpandedETAsHtml(arrs, group, stopKey);
             } catch(e) {
                 expandContainer.innerHTML = '<div style="color:var(--kmb-red); padding: 20px; text-align:center;">Failed</div>';
             }
@@ -812,13 +823,11 @@ async function toggleSheetEta(groupKey, stopKey) {
     }
 }
 
-// --- Render Main View ---
-async function renderMainNearby() {
+// --- Main View Core Logic ---
+async function renderMainNearby(isSilentRefresh = false) {
     const listEl = document.getElementById('mainRouteList');
     if (!currentNearestStopKey) {
-        if(allStops.length > 0 && !document.getElementById('mainLocationText').innerText.includes('Denied')) {
-             listEl.innerHTML = '<div class="text-center">Locating...</div>';
-        }
+        if (!isSilentRefresh) listEl.innerHTML = '<div class="text-center">Locating...</div>';
         return;
     }
     
@@ -830,15 +839,53 @@ async function renderMainNearby() {
         const group = groupedRoutes.find(g => g.key === groupKey);
         if (group) relevantGroups.push(group); 
     });
-    
-    relevantGroups.sort((a,b) => {
-        const numA = parseInt(a.routeNo.replace(/[^0-9]/g, '')) || 999;
-        const numB = parseInt(b.routeNo.replace(/[^0-9]/g, '')) || 999;
-        return numA - numB;
-    });
+
+    if (!isSilentRefresh) {
+        listEl.innerHTML = '<div class="init-loader"><div style="font-size:1.2rem; color:var(--text-main); font-weight:700;">Fetching live times...</div></div>';
+    }
+
+    // Fetch all ETAs for the stop to enable sorting
+    let groupsWithEtas = await Promise.all(relevantGroups.map(async g => {
+        try {
+            const arrs = await fetchEtaRaw(g, currentNearestStopKey);
+            let firstEtaMins = Infinity;
+            if (arrs.length > 0) {
+                const targetMs = new Date(arrs[0].estimatedArrivalTime.replace(/-/g, '/')).getTime();
+                firstEtaMins = Math.max(0, Math.floor((targetMs - Date.now())/60000));
+            }
+            return { group: g, arrs, firstEtaMins };
+        } catch(e) {
+            return { group: g, arrs: [], firstEtaMins: Infinity };
+        }
+    }));
+
+    // Sort: Smallest ETA first, Infinity (no buses) goes to bottom
+    groupsWithEtas.sort((a, b) => a.firstEtaMins - b.firstEtaMins);
 
     let html = '';
-    relevantGroups.forEach(g => {
+    let hasActive = false;
+
+    groupsWithEtas.forEach(item => {
+        const g = item.group;
+        const arrs = item.arrs;
+        const mins = item.firstEtaMins;
+        
+        if (!showInactive && mins === Infinity) return;
+        hasActive = true;
+
+        let summaryHtml = '';
+        if (mins !== Infinity) {
+            let timeHtml = mins === 0 ? 'Due' : `${mins}<span style="font-size:1.1rem; margin-left:2px;">m</span>`;
+            let isScheduled = (arrs[0].noGPS === 1 || arrs[0].noGPS === '1');
+            let colorClass = isScheduled ? 'color: var(--accent-orange)' : 'color: var(--accent-green)';
+            summaryHtml = `<div class="eta-time" style="${colorClass}">${timeHtml}</div>`;
+        } else {
+            summaryHtml = `<div class="eta-time" style="color:var(--text-sub)">--</div>`;
+        }
+
+        const isExpanded = (mainExpandedGroupKey === g.key);
+        const expandClass = isExpanded ? 'active' : '';
+
         html += `
           <div class="route-list-item" onclick="toggleMainEta('${g.key}')" id="main-item-${g.key}">
               <div class="route-no-col">${g.routeNo}</div>
@@ -847,59 +894,39 @@ async function renderMainNearby() {
                   <div class="route-sub">${g.company}</div>
               </div>
               <div class="route-eta-col" id="main-eta-summary-${g.key}">
-                 <div style="font-size:1rem; color:var(--text-sub);">...</div>
+                 ${summaryHtml}
               </div>
           </div>
-          <div class="eta-expanded-container" id="main-eta-expanded-${g.key}"></div>
+          <div class="eta-expanded-container ${expandClass}" id="main-eta-expanded-${g.key}">
         `;
-    });
-    listEl.innerHTML = html || '<div class="text-center">No routes found for this stop.</div>';
-
-    // Fetch ETAs for main view
-    for (const group of relevantGroups) {
-        const sumId = `main-eta-summary-${group.key}`;
-        const itemDom = document.getElementById(`main-item-${group.key}`);
         
-        try {
-            const arrs = await fetchEtaRaw(group, currentNearestStopKey);
-            if(arrs.length > 0) {
-                const targetMs = new Date(arrs[0].estimatedArrivalTime.replace(/-/g, '/')).getTime();
-                let mins = Math.max(0, Math.floor((targetMs - Date.now())/60000));
-                
-                let isScheduled = (arrs[0].noGPS === 1 || arrs[0].noGPS === '1');
-                let colorClass = isScheduled ? 'color: var(--accent-orange)' : 'color: var(--accent-green)';
-                let timeHtml = mins === 0 ? 'Due' : `${mins}<span style="font-size:1.1rem; margin-left:2px;">m</span>`;
-                
-                document.getElementById(sumId).innerHTML = `
-                    <div class="eta-time" style="${colorClass}">${timeHtml}</div>
-                `;
-                itemDom.style.display = 'flex';
-                
-                if (mainExpandedGroupKey === group.key) {
-                    renderExpandedETAs(arrs, group, currentNearestStopKey, `main-eta-expanded-${group.key}`);
-                }
-            } else {
-                document.getElementById(sumId).innerHTML = `<div class="eta-time" style="color:var(--text-sub)">--</div>`;
-            }
-        } catch(e) {
-            if(document.getElementById(sumId)) document.getElementById(sumId).innerHTML = '--';
+        if (isExpanded) {
+            html += generateExpandedETAsHtml(arrs, g, currentNearestStopKey);
         }
+        
+        html += `</div>`;
+    });
+
+    if (!hasActive && groupsWithEtas.length > 0) {
+        html = '<div class="text-center">No active buses currently.</div>';
+    } else if (groupsWithEtas.length === 0) {
+        html = '<div class="text-center">No routes found for this stop.</div>';
     }
+    
+    listEl.innerHTML = html;
+    document.getElementById('toggleInactiveBtn').style.display = groupsWithEtas.length > 0 ? 'block' : 'none';
 }
 
 async function toggleMainEta(groupKey) {
-    const expandContainer = document.getElementById(`main-eta-expanded-${groupKey}`);
-    if (!expandContainer) return;
-    
     if (mainExpandedGroupKey === groupKey) {
-        expandContainer.classList.remove('active');
+        document.getElementById(`main-eta-expanded-${groupKey}`).classList.remove('active');
         mainExpandedGroupKey = null;
     } else {
-        if (mainExpandedGroupKey) {
-            const prev = document.getElementById(`main-eta-expanded-${mainExpandedGroupKey}`);
-            if (prev) prev.classList.remove('active');
-        }
         mainExpandedGroupKey = groupKey;
+        // Close others
+        document.querySelectorAll('.eta-expanded-container.active').forEach(el => el.classList.remove('active'));
+        
+        const expandContainer = document.getElementById(`main-eta-expanded-${groupKey}`);
         expandContainer.classList.add('active');
         expandContainer.innerHTML = '<div style="color:var(--text-sub); padding: 20px; text-align:center;">Loading times...</div>';
         
@@ -907,7 +934,7 @@ async function toggleMainEta(groupKey) {
         if(group && currentNearestStopKey) {
             try {
                 const arrs = await fetchEtaRaw(group, currentNearestStopKey);
-                renderExpandedETAs(arrs, group, currentNearestStopKey, `main-eta-expanded-${groupKey}`);
+                expandContainer.innerHTML = generateExpandedETAsHtml(arrs, group, currentNearestStopKey);
             } catch(e) {
                 expandContainer.innerHTML = '<div style="color:var(--kmb-red); padding: 20px; text-align:center;">Failed to load.</div>';
             }
@@ -915,21 +942,17 @@ async function toggleMainEta(groupKey) {
     }
 }
 
-// Render expanded 3 ETAs (Main, Sheet, or Detail)
-function renderExpandedETAs(arrs, group, stopKey, containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
+function generateExpandedETAsHtml(arrs, group, stopKey) {
     if (arrs.length === 0) {
-        container.innerHTML = '<div style="color:var(--text-sub); text-align:center; padding: 20px;">No further departures scheduled.</div>';
-        return;
+        return '<div style="color:var(--text-sub); text-align:center; padding: 20px;">No further departures scheduled.</div>';
     }
     
     const stops = getStopsForGroup(group);
     const stopIdx = stops.findIndex(s => s.stopKey === stopKey);
     
     let html = '';
-    for(let i = 0; i < Math.min(3, arrs.length); i++) {
+    // Show max 2 buses
+    for(let i = 0; i < Math.min(2, arrs.length); i++) {
         const arr = arrs[i];
         const targetMs = new Date(arr.estimatedArrivalTime.replace(/-/g, '/')).getTime();
         let mins = Math.max(0, Math.floor((targetMs - Date.now())/60000));
@@ -938,12 +961,12 @@ function renderExpandedETAs(arrs, group, stopKey, containerId) {
         let timeStr = mins === 0 ? 'Due' : `${mins} <span style="font-size:1.2rem; font-weight:700;">m</span>`;
         let color = isScheduled ? 'var(--accent-orange)' : 'var(--accent-green)'; 
         
-        // Only show occupancy for the very next bus and if it is <= 45 minutes away
+        // Show occupancy only for the immediate bus AND if it's within 20 mins
         let occBadge = '';
-        if (i === 0 && mins <= 45) {
+        if (i === 0 && mins <= 20) {
             const occPct = calculateOccupancy(group.routeNo, group.dest_e, Math.max(0, stopIdx), stops.length, Date.now());
             let occClass = occPct > 80 ? 'occ-full' : (occPct > 50 ? 'occ-standing' : 'occ-seating');
-            let occText = occPct > 80 ? '⚠️ Full' : (occPct > 50 ? '🧍 Standing' : '💺 Seating');
+            let occText = occPct > 80 ? 'Full' : (occPct > 50 ? 'Standing' : 'Seating');
             occBadge = `<span class="occ-pill ${occClass}">${occText}</span>`;
         }
         
@@ -957,10 +980,10 @@ function renderExpandedETAs(arrs, group, stopKey, containerId) {
             </div>
         `;
     }
-    container.innerHTML = html;
+    return html;
 }
 
-// --- Search & Favs ---
+// --- Search ---
 function setRegionFilter(region) {
     activeRegionFilter = region;
     document.querySelectorAll('.region-btn').forEach(b => b.classList.remove('active'));
@@ -1005,11 +1028,12 @@ function renderSearchResults() {
     listEl.innerHTML = html;
 }
 
+// --- Favorites ---
 function renderFavList() {
     const listEl = document.getElementById('favList');
     
     let html = `
-        <div class="add-fav-btn" onclick="switchTab('search')">
+        <div class="add-fav-btn" onclick="openFavModal()">
             + Add New Favorite Route
         </div>
     `;
@@ -1030,12 +1054,69 @@ function renderFavList() {
                       <div class="route-dest">To ${g.dest_e}</div>
                       <div class="route-sub">${g.company}</div>
                   </div>
-                  <button class="del-fav-btn" onclick="event.stopPropagation(); toggleFavRoute('${g.key}');">🗑️</button>
+                  <button class="del-fav-btn" onclick="event.stopPropagation(); removeFavRoute('${g.key}');">🗑️</button>
               </div>
             `;
         }
     });
     listEl.innerHTML = html;
+}
+
+function removeFavRoute(key) {
+    favRoutes = favRoutes.filter(k => k !== key);
+    localStorage.setItem('kmb_fav_routes_v5', JSON.stringify(favRoutes));
+    renderFavList();
+}
+
+function openFavModal() {
+    document.getElementById('fav-modal').style.display = 'flex';
+    document.getElementById('favSearchInput').value = '';
+    renderFavSearch();
+}
+
+function closeFavModal() {
+    document.getElementById('fav-modal').style.display = 'none';
+}
+
+function renderFavSearch() {
+    const query = document.getElementById('favSearchInput').value.trim().toLowerCase();
+    const listEl = document.getElementById('favSearchResults');
+    
+    if(!query) {
+        listEl.innerHTML = '<div class="text-center" style="padding-top:40px; font-size:3rem; opacity:0.2;">🔍</div><div class="text-center" style="padding-top:0;">Type route number to add</div>';
+        return;
+    }
+
+    const matches = groupedRoutes.filter(g => g.routeNo.toLowerCase().includes(query) || g.dest_e.toLowerCase().includes(query));
+    
+    if(matches.length === 0) {
+        listEl.innerHTML = '<div class="text-center" style="padding-top:40px; font-size:3rem; opacity:0.2;">🚌</div><div class="text-center" style="padding-top:0;">No routes found</div>';
+        return;
+    }
+    
+    let html = '';
+    matches.slice(0, 50).forEach(g => {
+        const isSaved = favRoutes.includes(g.key);
+        html += `
+          <div class="route-list-item" style="opacity: ${isSaved ? '0.5' : '1'}; pointer-events: ${isSaved ? 'none' : 'auto'};" onclick="addFavFromModal('${g.key}')">
+              <div class="route-no-col" style="color:var(--kmb-red);">${g.routeNo}</div>
+              <div class="route-info-col">
+                  <div class="route-dest">To ${g.dest_e}</div>
+                  <div class="route-sub">${g.company} ${isSaved ? ' (Saved)' : ''}</div>
+              </div>
+          </div>
+        `;
+    });
+    listEl.innerHTML = html;
+}
+
+function addFavFromModal(key) {
+    if(!favRoutes.includes(key)) {
+        favRoutes.push(key);
+        localStorage.setItem('kmb_fav_routes_v5', JSON.stringify(favRoutes));
+    }
+    closeFavModal();
+    renderFavList();
 }
 
 // --- Detail View Stops ---
@@ -1094,7 +1175,7 @@ async function expandStop(idx) {
     
     try {
         const arrs = await fetchEtaRaw(detailRouteGroup, targetStop.stopKey);
-        renderExpandedETAs(arrs, detailRouteGroup, targetStop.stopKey, `detail-eta-expanded-${idx}`);
+        expandContainer.innerHTML = generateExpandedETAsHtml(arrs, detailRouteGroup, targetStop.stopKey);
     } catch(e) {
         expandContainer.innerHTML = '<div style="color:var(--kmb-red); padding:20px; text-align:center;">Failed to fetch ETAs.</div>';
     }
@@ -1176,19 +1257,22 @@ function startTimer() {
       document.getElementById('refreshTimerMain').innerText = '...';
       
       if (currentView === 'main') {
-          renderMainNearby().then(() => { isSyncing = false; });
+          // Silent refresh maintains open states cleanly with the new logic
+          renderMainNearby(true).then(() => { isSyncing = false; });
       } else if (currentView === 'detail' && detailExpandedStopIdx !== -1) {
           const stops = getStopsForGroup(detailRouteGroup);
           const targetStop = stops[detailExpandedStopIdx];
           fetchEtaRaw(detailRouteGroup, targetStop.stopKey).then(arrs => {
-              renderExpandedETAs(arrs, detailRouteGroup, targetStop.stopKey, `detail-eta-expanded-${detailExpandedStopIdx}`);
+              const expandContainer = document.getElementById(`detail-eta-expanded-${detailExpandedStopIdx}`);
+              if(expandContainer) expandContainer.innerHTML = generateExpandedETAsHtml(arrs, detailRouteGroup, targetStop.stopKey);
               isSyncing = false;
           }).catch(() => { isSyncing = false; });
       } else if (currentView === 'map' && sheetExpandedGroupKey) {
           const group = groupedRoutes.find(g => g.key === sheetExpandedGroupKey);
           if(group && currentNearestStopKey) {
               fetchEtaRaw(group, currentNearestStopKey).then(arrs => {
-                 renderExpandedETAs(arrs, group, currentNearestStopKey, `sheet-eta-expanded-${sheetExpandedGroupKey}`);
+                 const expandContainer = document.getElementById(`sheet-eta-expanded-${sheetExpandedGroupKey}`);
+                 if (expandContainer) expandContainer.innerHTML = generateExpandedETAsHtml(arrs, group, currentNearestStopKey);
                  isSyncing = false;
               }).catch(() => { isSyncing = false; });
           } else { isSyncing = false; }
