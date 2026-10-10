@@ -144,7 +144,19 @@
   .stop-name { font-size: 1.1rem; font-weight: 600; color: var(--text-main); }
   .nearest-tag { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; background: rgba(10,132,255,0.2); color: var(--accent-blue); border: 1px solid rgba(10,132,255,0.4); vertical-align: middle; text-transform: uppercase; }
   
-  #global-map-container { flex: 1; width: 100%; background: #111; z-index: 1; }
+  #global-map-container { flex: 1; width: 100%; background: #111; z-index: 1; position: relative; }
+  
+  .map-floating-filters {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1000;
+    display: flex; gap: 6px; background: rgba(28, 28, 30, 0.88); backdrop-filter: blur(12px);
+    padding: 4px; border-radius: 24px; border: 1px solid var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  }
+  .map-filter-btn {
+    padding: 7px 14px; border-radius: 18px; border: none; background: transparent;
+    color: var(--text-sub); font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .map-filter-btn.active { background: var(--theme-color); color: white; }
+
   .map-bottom-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: var(--bg-white); border-top-left-radius: 20px; border-top-right-radius: 20px; max-height: 70vh; overflow-y: auto; z-index: 1000; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.1, 0.8, 0.2, 1); box-shadow: 0 -4px 20px rgba(0,0,0,0.6); display: flex; flex-direction: column; }
   .map-bottom-sheet.active { transform: translateY(0); }
   .sheet-header { padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--bg-white); z-index: 2; }
@@ -174,7 +186,7 @@
   .fav-modal-search input:focus { border-color: var(--theme-color); outline: none; }
   .fav-modal-results { flex: 1; overflow-y: auto; background: var(--bg-light); }
 
-  /* Perfect Dark Mode Inversion for HK GeoData Maps */
+  /* Map Tile Inversion */
   .dark-tiles { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
   .custom-user-icon div { width: 100% !important; height: 100% !important; background: #0a84ff !important; border-radius: 50% !important; border: 3px solid white !important; box-shadow: 0 0 12px rgba(0,0,0,0.8) !important; }
 </style>
@@ -217,7 +229,14 @@
 
 <!-- Map View -->
 <main id="view-map" class="view-container">
-    <div id="global-map-container"></div>
+    <div id="global-map-container">
+        <!-- Floating filter bar over the map -->
+        <div class="map-floating-filters">
+            <button class="map-filter-btn active" id="mapFilter-ALL" onclick="setMapFilter('ALL')">All</button>
+            <button class="map-filter-btn" id="mapFilter-HR" onclick="setMapFilter('HR')">Heavy Rail</button>
+            <button class="map-filter-btn" id="mapFilter-LRT" onclick="setMapFilter('LRT')">Light Rail</button>
+        </div>
+    </div>
     <div id="map-bottom-sheet" class="map-bottom-sheet">
         <div class="sheet-header">
             <div class="sheet-title" id="sheet-title">Station Name</div>
@@ -276,7 +295,6 @@
 // ==========================================
 
 const LINE_META = {
-    // Heavy Rail & Splits
     'AEL': { network: 'HR', apiCode: 'AEL', name: 'Airport Express', colorHex: '#14b8a6' },
     'TCL': { network: 'HR', apiCode: 'TCL', name: 'Tung Chung Line', colorHex: '#f97316' },
     'TML': { network: 'HR', apiCode: 'TML', name: 'Tuen Ma Line', colorHex: '#b45309' },
@@ -415,14 +433,12 @@ const HR_ROUTES = {
     'SIL': ['ADM', 'OCP', 'WCH', 'LET', 'SOH'],
     'TML': ['WKS', 'MOS', 'HEO', 'TSH', 'CIO', 'STW', 'CKT', 'TAW', 'HIK', 'DIH', 'KAT', 'SUW', 'TKW', 'HOM', 'HUH', 'ETS', 'AUS', 'NAC', 'MEF', 'TWW', 'KSR', 'YUL', 'LOP', 'TIS', 'SIH', 'TUM'],
     'DRL': ['SUN', 'DIS'],
-    // Branches Split explicitly
     'EAL_LW': ['ADM', 'EXC', 'HUH', 'MKK', 'KOT', 'TAW', 'SHT', 'FOT', 'UNI', 'TAP', 'TWO', 'FAN', 'SHS', 'LOW'],
     'EAL_LMC': ['ADM', 'EXC', 'HUH', 'MKK', 'KOT', 'TAW', 'SHT', 'FOT', 'UNI', 'TAP', 'TWO', 'FAN', 'SHS', 'LMC'],
     'TKL_POA': ['NOP', 'QUB', 'YAT', 'TIK', 'TKO', 'HAO', 'POA'],
     'TKL_LHP': ['NOP', 'QUB', 'YAT', 'TIK', 'TKO', 'LHP']
 };
 
-// Light Rail Station Directory
 const LR_STOPS_DICT = {
     '001': { name: 'Ferry Pier', lat: 22.3725, lng: 113.9652, isTerminal: true },
     '010': { name: 'Melody Garden', lat: 22.3735, lng: 113.9608, isTerminal: false },
@@ -484,7 +500,6 @@ const LR_STOPS_DICT = {
     '600': { name: 'Yuen Long', lat: 22.4462, lng: 114.0347, isTerminal: true }
 };
 
-// Map stops dynamically to actual Light Rail Route sequences
 const LR_ROUTES = {
   'LR_505': ['920', '265', '270', '280', '295', '060', '190', '180', '170', '160', '150', '140', '130', '120', '110', '100'], 
   'LR_506P':['001', '240', '250', '260', '265', '270', '280', '295', '300'],
@@ -513,6 +528,7 @@ let favRoutes = JSON.parse(localStorage.getItem('mtr_fav_routes_v4') || '[]');
 let lastKnownPos = null;
 let currentNearestStopKey = null;
 let activeRegionFilter = 'ALL';
+let activeMapFilter = 'ALL';
 let mainExpandedGroupKey = null;
 let sheetExpandedGroupKey = null;
 
@@ -534,7 +550,6 @@ let countdown = REFRESH_INTERVAL;
 let timerInterval = null;
 let isSyncing = false;
 const requestCache = new Map();
-
 
 // ==========================================
 // ZONE 2: ALGORITHMS & DYNAMIC LOAD LOGIC
@@ -640,7 +655,7 @@ function calculateLoadLRT(trains, index, train_length, currentRouteNo, currentHo
     const liveHeadway = Math.max(1, t2 - t1), expectedHeadway = 8.0;
     let gapMultiplier = 1.0;
     if (liveHeadway > expectedHeadway) gapMultiplier = Math.pow((liveHeadway / expectedHeadway), 1.1); 
-    else if (liveHeadway < expectedHeadway && liveHeadway > 0) gapMultiplier = Math.max(0.4, liveHeadway / expectedHeadway);
+    else if (liveHeadway < expectedHeadway && liveHeadway > 0) gapMultiplier = Math.max(0.4, liveHeadway / expectedHeadway); 
     
     let loadFactor = baseLoad * gapMultiplier + (Math.random() * 6 - 3); 
     return Math.min(95, Math.max(5, Math.round(loadFactor)));
@@ -651,7 +666,7 @@ function calculateLoadLRT(trains, index, train_length, currentRouteNo, currentHo
 // ==========================================
 
 function buildInternalData() {
-    // Generate Heavy Rail stops
+    STATIONS = [];
     Object.keys(HR_ROUTES).forEach(hrKey => {
         HR_ROUTES[hrKey].forEach(code => {
             const s = RAW_HR_STATIONS.find(stn => stn.code === code);
@@ -661,7 +676,6 @@ function buildInternalData() {
         });
     });
 
-    // Generate Light Rail stops
     Object.keys(LR_ROUTES).forEach(lrKey => {
         LR_ROUTES[lrKey].forEach(code => {
             const s = LR_STOPS_DICT[code];
@@ -696,7 +710,6 @@ function buildInternalData() {
     STATIONS.forEach(s => {
         const meta = LINE_META[s.line];
         const network = meta ? meta.network : 'HR';
-        
         const key = getGlobalStopKey({name: s.name, lat: s.lat}, network);
         
         if (!uniqueStops.has(key)) {
@@ -750,14 +763,11 @@ async function fetchMtrEtaRaw(group, stopKey) {
             
             if(res && res.status === 1 && res.data && res.data[`${apiLineCode}-${stn.code}`]) {
                 const data = res.data[`${apiLineCode}-${stn.code}`];
-                
-                // Allow only trains that go to destinations on THIS specific branch
                 const validDests = routeStopsCache[group.key].map(s => s.code);
                 
                 const processDir = (trainsArray) => {
                     const safeArray = trainsArray || []; 
                     safeArray.forEach((t, i) => {
-                        // Filter out branch cross-contamination
                         if (!validDests.includes(t.dest) && t.dest !== 'ADM') return;
                         if (t.dest === 'LMC' && group.key === 'EAL_LW') return;
                         if (t.dest === 'LOW' && group.key === 'EAL_LMC') return;
@@ -818,7 +828,6 @@ async function fetchMtrEtaRaw(group, stopKey) {
     return results.sort((a,b) => a.mins - b.mins);
 }
 
-
 // ==========================================
 // ZONE 4: MAPS & GPS LOGIC
 // ==========================================
@@ -829,9 +838,7 @@ function makeUserIcon() {
 function refreshGPS(timeoutMs = 4000) {
     return new Promise((resolve) => {
         if (!navigator.geolocation) { resolve(lastKnownPos); return; }
-        
         const fallback = setTimeout(() => resolve(lastKnownPos), timeoutMs + 500);
-        
         navigator.geolocation.getCurrentPosition((pos) => {
             clearTimeout(fallback);
             lastKnownPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
@@ -887,7 +894,8 @@ function locateNearestStopPromise() {
 
             if (closest) {
                 currentNearestStopKey = closest.stopKey;
-                document.getElementById('mainLocationText').innerText = closest.stopName_e;
+                const distNotice = minDistance > 3.0 ? ` (${minDistance.toFixed(1)}km)` : '';
+                document.getElementById('mainLocationText').innerText = `${closest.stopName_e}${distNotice}`;
                 renderMainNearby();
                 if (currentView === 'map' && globalMapInstance) renderGlobalMapStops();
                 if (currentView === 'search') renderSearchResults();
@@ -906,22 +914,22 @@ function locateNearestStopPromise() {
 
 function initDetailMap() {
     mapInstance = L.map('map-container', { zoomControl: false }).setView([22.3, 114.16], 11);
-    
-    // Officially migrating to HK GeoData Store API (Completely free, no watermarks, no API key required)
     L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/wgs84/{z}/{x}/{y}.png', {
         className: 'dark-tiles', attribution: '&copy; Hong Kong GeoData Store'
     }).addTo(mapInstance);
     L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/en/wgs84/{z}/{x}/{y}.png', {
         className: 'dark-tiles'
     }).addTo(mapInstance);
-    
     L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 }
 
 function initGlobalMap() {
-    globalMapInstance = L.map('global-map-container', { zoomControl: false }).setView([22.3, 114.16], 12);
+    const startLat = lastKnownPos ? lastKnownPos.lat : 22.3193;
+    const startLon = lastKnownPos ? lastKnownPos.lon : 114.1694;
+    const startZoom = lastKnownPos ? 13 : 11;
+
+    globalMapInstance = L.map('global-map-container', { zoomControl: false }).setView([startLat, startLon], startZoom);
     
-    // Officially migrating to HK GeoData Store API 
     L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/wgs84/{z}/{x}/{y}.png', {
         className: 'dark-tiles', attribution: '&copy; Hong Kong GeoData Store'
     }).addTo(globalMapInstance);
@@ -933,8 +941,64 @@ function initGlobalMap() {
     
     if (lastKnownPos) {
         userMarkerGlobal = L.marker([lastKnownPos.lat, lastKnownPos.lon], {icon: makeUserIcon(), zIndexOffset: 1000}).addTo(globalMapInstance);
-        globalMapInstance.setView([lastKnownPos.lat, lastKnownPos.lon], 14);
     }
+
+    // Attach event listeners to cull and render markers based on viewport
+    globalMapInstance.on('moveend', renderGlobalMapStops);
+    renderGlobalMapStops();
+}
+
+function setMapFilter(filter) {
+    activeMapFilter = filter;
+    document.querySelectorAll('.map-filter-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById(`mapFilter-${filter}`);
+    if (btn) btn.classList.add('active');
+    renderGlobalMapStops();
+}
+
+function renderGlobalMapStops() {
+    if (!globalMapInstance) return;
+    
+    // Clear old markers
+    globalMarkers.forEach(m => globalMapInstance.removeLayer(m));
+    globalMarkers = [];
+
+    const bounds = globalMapInstance.getBounds();
+    const currentZoom = globalMapInstance.getZoom();
+
+    let candidateStops = allStops;
+    if (activeMapFilter !== 'ALL') {
+        candidateStops = candidateStops.filter(s => s.network === activeMapFilter);
+    }
+
+    // Viewport-based culling prevents browser bloat
+    let visibleStops = candidateStops.filter(s => {
+        const lat = parseFloat(s.latitude);
+        const lon = parseFloat(s.longitude);
+        return bounds.contains([lat, lon]);
+    });
+
+    // When zoomed far out, show interchanges and terminals
+    if (currentZoom < 12) {
+        visibleStops = visibleStops.filter(s => s.isTerminal || s.routes.size > 1 || s.network === 'HR');
+    }
+
+    visibleStops.forEach(s => {
+        const isLRT = s.network === 'LRT';
+        const borderColor = isLRT ? '#eab308' : 'var(--theme-color)';
+        const stopIcon = L.divIcon({
+            className: 'custom-stop-icon',
+            html: `<div style="width:16px;height:16px;background:white;border:4px solid ${borderColor};border-radius:50%; box-shadow: 0 0 6px rgba(0,0,0,0.6);"></div>`,
+            iconSize: [16, 16]
+        });
+
+        const marker = L.marker([parseFloat(s.latitude), parseFloat(s.longitude)], { icon: stopIcon }).addTo(globalMapInstance);
+        marker.on('click', () => {
+            globalMapInstance.setView(marker.getLatLng(), Math.max(currentZoom, 15), { animate: true });
+            openMapSheet(s);
+        });
+        globalMarkers.push(marker);
+    });
 }
 
 function drawRouteOnMap(group) {
@@ -964,24 +1028,6 @@ function drawRouteOnMap(group) {
     mapInstance.fitBounds(bounds, { padding: [40, 40] });
 }
 
-function renderGlobalMapStops() {
-    if (!globalMapInstance || !lastKnownPos) return;
-    globalMarkers.forEach(m => globalMapInstance.removeLayer(m));
-    globalMarkers = [];
-    const stopIcon = L.divIcon({ className: 'custom-stop-icon', html: `<div style="width:16px;height:16px;background:white;border:4px solid var(--theme-color);border-radius:50%; box-shadow: 0 0 6px rgba(0,0,0,0.5);"></div>`, iconSize: [16, 16] });
-    
-    let nearby = allStops.filter(s => calculateDistanceKm(lastKnownPos.lat, lastKnownPos.lon, parseFloat(s.latitude), parseFloat(s.longitude)) <= 2.0);
-    nearby.forEach(s => {
-        const marker = L.marker([parseFloat(s.latitude), parseFloat(s.longitude)], {icon: stopIcon}).addTo(globalMapInstance);
-        marker.on('click', () => {
-            globalMapInstance.setView(marker.getLatLng(), 15, { animate: true });
-            openMapSheet(s);
-        });
-        globalMarkers.push(marker);
-    });
-    globalMapInstance.setView([lastKnownPos.lat, lastKnownPos.lon], 14);
-}
-
 // ==========================================
 // ZONE 5: CORE APP LOGIC & STATE MUTATION
 // ==========================================
@@ -1006,17 +1052,12 @@ async function initApp() {
   }
 }
 
-function getNearbyRoutes(maxDistanceKm = 1.5, targetNetwork = 'ALL') {
+function getNearbyRoutes(maxDistanceKm = 3.5, targetNetwork = 'ALL') {
     if (!lastKnownPos || allStops.length === 0) return [];
 
     let eligibleStops = allStops;
     if (targetNetwork !== 'ALL') {
-        eligibleStops = allStops.filter(s => {
-            return Array.from(s.routes).some(rk => {
-                const g = groupedRoutes.find(r => r.key === rk);
-                return g && g.network === targetNetwork;
-            });
-        });
+        eligibleStops = allStops.filter(s => s.network === targetNetwork);
     }
 
     if (eligibleStops.length === 0) return [];
@@ -1077,7 +1118,6 @@ function switchTab(tabId) {
         closeMapSheet();
         if (!globalMapInstance) {
             initGlobalMap();
-            locateNearestStopPromise().then(() => { renderGlobalMapStops(); });
         } else {
             globalMapInstance.invalidateSize();
             renderGlobalMapStops();
@@ -1349,7 +1389,7 @@ function renderSearchResults() {
     
     if (!query) {
         if (activeRegionFilter === 'ALL') {
-            let nearby = getNearbyRoutes(2.5, 'ALL');
+            let nearby = getNearbyRoutes(3.5, 'ALL');
             
             if (!lastKnownPos && nearby.length === 0) {
                 listEl.innerHTML = `<div class="text-center" style="padding-top:60px;"><div style="font-size:3rem; margin-bottom:12px;">📍</div><div style="font-weight:700;">Locating nearby stations...</div></div>`;
@@ -1591,4 +1631,3 @@ window.onload = initApp;
 </script>
 </body>
 </html>
-
