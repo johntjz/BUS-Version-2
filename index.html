@@ -276,19 +276,25 @@
 // ==========================================
 
 const LINE_META = {
-    'AEL': { network: 'HR', name: 'Airport Express', colorHex: '#14b8a6' },
-    'TCL': { network: 'HR', name: 'Tung Chung Line', colorHex: '#f97316' },
-    'TML': { network: 'HR', name: 'Tuen Ma Line', colorHex: '#b45309' },
-    'TKL': { network: 'HR', name: 'Tseung Kwan O Line', colorHex: '#9333ea' },
-    'EAL': { network: 'HR', name: 'East Rail Line', colorHex: '#0ea5e9' },
-    'SIL': { network: 'HR', name: 'South Island Line', colorHex: '#84cc16' },
-    'TWL': { network: 'HR', name: 'Tsuen Wan Line', colorHex: '#dc2626' },
-    'ISL': { network: 'HR', name: 'Island Line', colorHex: '#2563eb' },
-    'KTL': { network: 'HR', name: 'Kwun Tong Line', colorHex: '#059669' },
+    // Heavy Rail & Splits
+    'AEL': { network: 'HR', apiCode: 'AEL', name: 'Airport Express', colorHex: '#14b8a6' },
+    'TCL': { network: 'HR', apiCode: 'TCL', name: 'Tung Chung Line', colorHex: '#f97316' },
+    'TML': { network: 'HR', apiCode: 'TML', name: 'Tuen Ma Line', colorHex: '#b45309' },
+    'KTL': { network: 'HR', apiCode: 'KTL', name: 'Kwun Tong Line', colorHex: '#059669' },
+    'TWL': { network: 'HR', apiCode: 'TWL', name: 'Tsuen Wan Line', colorHex: '#dc2626' },
+    'ISL': { network: 'HR', apiCode: 'ISL', name: 'Island Line', colorHex: '#2563eb' },
+    'SIL': { network: 'HR', apiCode: 'SIL', name: 'South Island Line', colorHex: '#84cc16' },
+    'DRL': { network: 'HR', apiCode: 'DRL', name: 'Disneyland Resort Line', colorHex: '#ec4899' },
+    'EAL_LW': { network: 'HR', apiCode: 'EAL', name: 'East Rail Line (Lo Wu)', colorHex: '#0ea5e9' },
+    'EAL_LMC': { network: 'HR', apiCode: 'EAL', name: 'East Rail Line (Lok Ma Chau)', colorHex: '#0284c7' },
+    'TKL_POA': { network: 'HR', apiCode: 'TKL', name: 'Tseung Kwan O Line (Po Lam)', colorHex: '#9333ea' },
+    'TKL_LHP': { network: 'HR', apiCode: 'TKL', name: 'Tseung Kwan O Line (LOHAS)', colorHex: '#a855f7' },
     
     // Light Rail Routes
     'LR_505': { network: 'LRT', name: 'Sam Shing', colorHex: '#eab308' },
+    'LR_506P':{ network: 'LRT', name: 'Pui To', colorHex: '#ef4444' },
     'LR_507': { network: 'LRT', name: 'Tin King', colorHex: '#22c55e' },
+    'LR_507P':{ network: 'LRT', name: 'Tuen Mun Ferry Pier', colorHex: '#16a34a' },
     'LR_610': { network: 'LRT', name: 'Yuen Long', colorHex: '#8b5cf6' },
     'LR_614': { network: 'LRT', name: 'Yuen Long', colorHex: '#06b6d4' },
     'LR_614P': { network: 'LRT', name: 'Siu Hong', colorHex: '#f43f5e' },
@@ -297,129 +303,124 @@ const LINE_META = {
     'LR_705': { network: 'LRT', name: 'TSW Circular (CCW)', colorHex: '#84cc16' },
     'LR_706': { network: 'LRT', name: 'TSW Circular (CW)', colorHex: '#d946ef' },
     'LR_751': { network: 'LRT', name: 'Tin Yat', colorHex: '#f97316' },
+    'LR_751P':{ network: 'LRT', name: 'Tin Yat', colorHex: '#ea580c' },
     'LR_761P': { network: 'LRT', name: 'Yuen Long', colorHex: '#64748b' }
 };
 
-const STATIONS = [
-    { key: 'HOK', line: 'AEL', code: 'HOK', name: 'Hong Kong', lat: 22.2846, lng: 114.1581, isTerminal: true },
-    { key: 'KOW', line: 'AEL', code: 'KOW', name: 'Kowloon', lat: 22.3043, lng: 114.1615, isTerminal: false },
-    { key: 'TSY', line: 'AEL', code: 'TSY', name: 'Tsing Yi', lat: 22.3584, lng: 114.1069, isTerminal: false },
-    { key: 'AIR', line: 'AEL', code: 'AIR', name: 'Airport', lat: 22.3153, lng: 113.9350, isTerminal: false },
-    { key: 'AWE', line: 'AEL', code: 'AWE', name: 'AsiaWorld-Expo', lat: 22.3211, lng: 113.9431, isTerminal: true },
-    { key: 'HOK', line: 'TCL', code: 'HOK', name: 'Hong Kong', lat: 22.2846, lng: 114.1581, isTerminal: true },
-    { key: 'KOW', line: 'TCL', code: 'KOW', name: 'Kowloon', lat: 22.3043, lng: 114.1615, isTerminal: false },
-    { key: 'OLY', line: 'TCL', code: 'OLY', name: 'Olympic', lat: 22.3177, lng: 114.1602, isTerminal: false },
-    { key: 'NAC', line: 'TCL', code: 'NAC', name: 'Nam Cheong', lat: 22.3253, lng: 114.1539, isTerminal: false },
-    { key: 'LAK', line: 'TCL', code: 'LAK', name: 'Lai King', lat: 22.3483, lng: 114.1271, isTerminal: false },
-    { key: 'TSY', line: 'TCL', code: 'TSY', name: 'Tsing Yi', lat: 22.3584, lng: 114.1069, isTerminal: false },
-    { key: 'SUN', line: 'TCL', code: 'SUN', name: 'Sunny Bay', lat: 22.3314, lng: 114.0298, isTerminal: false },
-    { key: 'TUC', line: 'TCL', code: 'TUC', name: 'Tung Chung', lat: 22.2894, lng: 113.9405, isTerminal: true },
-    { key: 'CEN', line: 'TWL', code: 'CEN', name: 'Central', lat: 22.2819, lng: 114.1577, isTerminal: true },
-    { key: 'ADM', line: 'TWL', code: 'ADM', name: 'Admiralty', lat: 22.2795, lng: 114.1646, isTerminal: false },
-    { key: 'TST', line: 'TWL', code: 'TST', name: 'Tsim Sha Tsui', lat: 22.2976, lng: 114.1722, isTerminal: false },
-    { key: 'JOR', line: 'TWL', code: 'JOR', name: 'Jordan', lat: 22.3049, lng: 114.1717, isTerminal: false },
-    { key: 'YMT', line: 'TWL', code: 'YMT', name: 'Yau Ma Tei', lat: 22.3134, lng: 114.1706, isTerminal: false },
-    { key: 'MOK', line: 'TWL', code: 'MOK', name: 'Mong Kok', lat: 22.3201, lng: 114.1697, isTerminal: false },
-    { key: 'PRE', line: 'TWL', code: 'PRE', name: 'Prince Edward', lat: 22.3245, lng: 114.1681, isTerminal: false },
-    { key: 'SSP', line: 'TWL', code: 'SSP', name: 'Sham Shui Po', lat: 22.3308, lng: 114.1623, isTerminal: false },
-    { key: 'CSW', line: 'TWL', code: 'CSW', name: 'Cheung Sha Wan', lat: 22.3371, lng: 114.1558, isTerminal: false },
-    { key: 'LCK', line: 'TWL', code: 'LCK', name: 'Lai Chi Kok', lat: 22.3374, lng: 114.1485, isTerminal: false },
-    { key: 'MEF', line: 'TWL', code: 'MEF', name: 'Mei Foo', lat: 22.3374, lng: 114.1396, isTerminal: false },
-    { key: 'LAK', line: 'TWL', code: 'LAK', name: 'Lai King', lat: 22.3483, lng: 114.1271, isTerminal: false },
-    { key: 'KWF', line: 'TWL', code: 'KWF', name: 'Kwai Fong', lat: 22.3565, lng: 114.1278, isTerminal: false },
-    { key: 'KWH', line: 'TWL', code: 'KWH', name: 'Kwai Hing', lat: 22.3629, lng: 114.1315, isTerminal: false },
-    { key: 'TWH', line: 'TWL', code: 'TWH', name: 'Tai Wo Hau', lat: 22.3706, lng: 114.1230, isTerminal: false },
-    { key: 'TSW', line: 'TWL', code: 'TSW', name: 'Tsuen Wan', lat: 22.3739, lng: 114.1186, isTerminal: true },
-    { key: 'WHA', line: 'KTL', code: 'WHA', name: 'Whampoa', lat: 22.3033, lng: 114.1897, isTerminal: true },
-    { key: 'HOM', line: 'KTL', code: 'HOM', name: 'Ho Man Tin', lat: 22.3093, lng: 114.1827, isTerminal: false },
-    { key: 'YMT', line: 'KTL', code: 'YMT', name: 'Yau Ma Tei', lat: 22.3134, lng: 114.1706, isTerminal: false },
-    { key: 'MOK', line: 'KTL', code: 'MOK', name: 'Mong Kok', lat: 22.3201, lng: 114.1697, isTerminal: false },
-    { key: 'PRE', line: 'KTL', code: 'PRE', name: 'Prince Edward', lat: 22.3245, lng: 114.1681, isTerminal: false },
-    { key: 'SKM', line: 'KTL', code: 'SKM', name: 'Shek Kip Mei', lat: 22.3323, lng: 114.1686, isTerminal: false },
-    { key: 'KOT', line: 'KTL', code: 'KOT', name: 'Kowloon Tong', lat: 22.3371, lng: 114.1758, isTerminal: false },
-    { key: 'LOF', line: 'KTL', code: 'LOF', name: 'Lok Fu', lat: 22.3377, lng: 114.1873, isTerminal: false },
-    { key: 'WTS', line: 'KTL', code: 'WTS', name: 'Wong Tai Sin', lat: 22.3413, lng: 114.1932, isTerminal: false },
-    { key: 'DIH', line: 'KTL', code: 'DIH', name: 'Diamond Hill', lat: 22.3402, lng: 114.2017, isTerminal: false },
-    { key: 'CHH', line: 'KTL', code: 'CHH', name: 'Choi Hung', lat: 22.3343, lng: 114.2046, isTerminal: false },
-    { key: 'KOB', line: 'KTL', code: 'KOB', name: 'Kowloon Bay', lat: 22.3236, lng: 114.2141, isTerminal: false },
-    { key: 'NTK', line: 'KTL', code: 'NTK', name: 'Ngau Tau Kok', lat: 22.3155, lng: 114.2192, isTerminal: false },
-    { key: 'KWT', line: 'KTL', code: 'KWT', name: 'Kwun Tong', lat: 22.3121, lng: 114.2263, isTerminal: false },
-    { key: 'LAT', line: 'KTL', code: 'LAT', name: 'Lam Tin', lat: 22.3072, lng: 114.2372, isTerminal: false },
-    { key: 'YAT', line: 'KTL', code: 'YAT', name: 'Yau Tong', lat: 22.2974, lng: 114.2382, isTerminal: false },
-    { key: 'TIK', line: 'KTL', code: 'TIK', name: 'Tiu Keng Leng', lat: 22.3047, lng: 114.2526, isTerminal: true },
-    { key: 'KET', line: 'ISL', code: 'KET', name: 'Kennedy Town', lat: 22.2811, lng: 114.1276, isTerminal: true },
-    { key: 'HKU', line: 'ISL', code: 'HKU', name: 'HKU', lat: 22.2844, lng: 114.1352, isTerminal: false },
-    { key: 'SYP', line: 'ISL', code: 'SYP', name: 'Sai Ying Pun', lat: 22.2870, lng: 114.1420, isTerminal: false },
-    { key: 'SHW', line: 'ISL', code: 'SHW', name: 'Sheung Wan', lat: 22.2870, lng: 114.1523, isTerminal: false },
-    { key: 'CEN', line: 'ISL', code: 'CEN', name: 'Central', lat: 22.2819, lng: 114.1577, isTerminal: false },
-    { key: 'ADM', line: 'ISL', code: 'ADM', name: 'Admiralty', lat: 22.2795, lng: 114.1646, isTerminal: false },
-    { key: 'WAC', line: 'ISL', code: 'WAC', name: 'Wan Chai', lat: 22.2777, lng: 114.1729, isTerminal: false },
-    { key: 'CAB', line: 'ISL', code: 'CAB', name: 'Causeway Bay', lat: 22.2804, lng: 114.1848, isTerminal: false },
-    { key: 'TIN', line: 'ISL', code: 'TIN', name: 'Tin Hau', lat: 22.2828, lng: 114.1916, isTerminal: false },
-    { key: 'FOH', line: 'ISL', code: 'FOH', name: 'Fortress Hill', lat: 22.2882, lng: 114.1939, isTerminal: false },
-    { key: 'NOP', line: 'ISL', code: 'NOP', name: 'North Point', lat: 22.2917, lng: 114.2007, isTerminal: false },
-    { key: 'QUB', line: 'ISL', code: 'QUB', name: 'Quarry Bay', lat: 22.2876, lng: 114.2114, isTerminal: false },
-    { key: 'TAK', line: 'ISL', code: 'TAK', name: 'Tai Koo', lat: 22.2851, lng: 114.2173, isTerminal: false },
-    { key: 'SKW', line: 'ISL', code: 'SKW', name: 'Sai Wan Ho', lat: 22.2823, lng: 114.2215, isTerminal: false },
-    { key: 'SWH', line: 'ISL', code: 'SWH', name: 'Shau Kei Wan', lat: 22.2794, lng: 114.2295, isTerminal: false },
-    { key: 'HFC', line: 'ISL', code: 'HFC', name: 'Heng Fa Chuen', lat: 22.2773, lng: 114.2400, isTerminal: false },
-    { key: 'CHW', line: 'ISL', code: 'CHW', name: 'Chai Wan', lat: 22.2647, lng: 114.2374, isTerminal: true },
-    { key: 'NOP', line: 'TKL', code: 'NOP', name: 'North Point', lat: 22.2917, lng: 114.2007, isTerminal: true },
-    { key: 'QUB', line: 'TKL', code: 'QUB', name: 'Quarry Bay', lat: 22.2876, lng: 114.2114, isTerminal: false },
-    { key: 'YAT', line: 'TKL', code: 'YAT', name: 'Yau Tong', lat: 22.2974, lng: 114.2382, isTerminal: false },
-    { key: 'TIK', line: 'TKL', code: 'TIK', name: 'Tiu Keng Leng', lat: 22.3047, lng: 114.2526, isTerminal: false },
-    { key: 'TKO', line: 'TKL', code: 'TKO', name: 'Tseung Kwan O', lat: 22.3073, lng: 114.2604, isTerminal: false },
-    { key: 'LHP', line: 'TKL', code: 'LHP', name: 'LOHAS Park', lat: 22.2952, lng: 114.2690, isTerminal: true },
-    { key: 'HAO', line: 'TKL', code: 'HAO', name: 'Hang Hau', lat: 22.3157, lng: 114.2651, isTerminal: false },
-    { key: 'POA', line: 'TKL', code: 'POA', name: 'Po Lam', lat: 22.3230, lng: 114.2595, isTerminal: true },
-    { key: 'ADM', line: 'EAL', code: 'ADM', name: 'Admiralty', lat: 22.2795, lng: 114.1646, isTerminal: true },
-    { key: 'EXC', line: 'EAL', code: 'EXC', name: 'Exhibition Centre', lat: 22.2818, lng: 114.1758, isTerminal: false },
-    { key: 'HUH', line: 'EAL', code: 'HUH', name: 'Hung Hom', lat: 22.3031, lng: 114.1818, isTerminal: false },
-    { key: 'MKK', line: 'EAL', code: 'MKK', name: 'Mong Kok East', lat: 22.3217, lng: 114.1729, isTerminal: false },
-    { key: 'KOT', line: 'EAL', code: 'KOT', name: 'Kowloon Tong', lat: 22.3371, lng: 114.1758, isTerminal: false },
-    { key: 'TAW', line: 'EAL', code: 'TAW', name: 'Tai Wai', lat: 22.3732, lng: 114.1783, isTerminal: false },
-    { key: 'SHT', line: 'EAL', code: 'SHT', name: 'Sha Tin', lat: 22.3826, lng: 114.1878, isTerminal: false },
-    { key: 'FOT_E', line: 'EAL', code: 'FOT', name: 'Fo Tan', lat: 22.3965, lng: 114.1969, isTerminal: false },
-    { key: 'RAC', line: 'EAL', code: 'RAC', name: 'Racecourse', lat: 22.3999, lng: 114.2039, isTerminal: false },
-    { key: 'UNI', line: 'EAL', code: 'UNI', name: 'University', lat: 22.4132, lng: 114.2107, isTerminal: false },
-    { key: 'TAP', line: 'EAL', code: 'TAP', name: 'Tai Po Market', lat: 22.4447, lng: 114.1678, isTerminal: false },
-    { key: 'TWO', line: 'EAL', code: 'TWO', name: 'Tai Wo', lat: 22.4513, lng: 114.1611, isTerminal: false },
-    { key: 'FAN', line: 'EAL', code: 'FAN', name: 'Fanling', lat: 22.4920, lng: 114.1384, isTerminal: false },
-    { key: 'SHS', line: 'EAL', code: 'SHS', name: 'Sheung Shui', lat: 22.5015, lng: 114.1281, isTerminal: false },
-    { key: 'LOW', line: 'EAL', code: 'LOW', name: 'Lo Wu', lat: 22.5290, lng: 114.1132, isTerminal: true },
-    { key: 'LMC', line: 'EAL', code: 'LMC', name: 'Lok Ma Chau', lat: 22.5165, lng: 114.0645, isTerminal: true },
-    { key: 'ADM', line: 'SIL', code: 'ADM', name: 'Admiralty', lat: 22.2795, lng: 114.1646, isTerminal: true },
-    { key: 'OCP', line: 'SIL', code: 'OCP', name: 'Ocean Park', lat: 22.2476, lng: 114.1751, isTerminal: false },
-    { key: 'WCH', line: 'SIL', code: 'WCH', name: 'Wong Chuk Hang', lat: 22.2478, lng: 114.1687, isTerminal: false },
-    { key: 'LET', line: 'SIL', code: 'LET', name: 'Lei Tung', lat: 22.2415, lng: 114.1561, isTerminal: false },
-    { key: 'SOH', line: 'SIL', code: 'SOH', name: 'South Horizons', lat: 22.2443, lng: 114.1481, isTerminal: true },
-    { key: 'WKS', line: 'TML', code: 'WKS', name: 'Wu Kai Sha', lat: 22.4285, lng: 114.2443, isTerminal: true },
-    { key: 'MOS', line: 'TML', code: 'MOS', name: 'Ma On Shan', lat: 22.4253, lng: 114.2319, isTerminal: false },
-    { key: 'HEO', line: 'TML', code: 'HEO', name: 'Heng On', lat: 22.4173, lng: 114.2255, isTerminal: false },
-    { key: 'TSH', line: 'TML', code: 'TSH', name: 'Tai Shui Hang', lat: 22.4087, lng: 114.2215, isTerminal: false },
-    { key: 'CIO', line: 'TML', code: 'CIO', name: 'City One', lat: 22.3875, lng: 114.2036, isTerminal: false },
-    { key: 'STW', line: 'TML', code: 'STW', name: 'Sha Tin Wai', lat: 22.3807, lng: 114.1945, isTerminal: false },
-    { key: 'CKT', line: 'TML', code: 'CKT', name: 'Che Kung Temple', lat: 22.3755, lng: 114.1866, isTerminal: false },
-    { key: 'TAW', line: 'TML', code: 'TAW', name: 'Tai Wai', lat: 22.3732, lng: 114.1783, isTerminal: false },
-    { key: 'HIK', line: 'TML', code: 'HIK', name: 'Hin Keng', lat: 22.3637, lng: 114.1717, isTerminal: false },
-    { key: 'DIH', line: 'TML', code: 'DIH', name: 'Diamond Hill', lat: 22.3402, lng: 114.2017, isTerminal: false },
-    { key: 'KAT', line: 'TML', code: 'KAT', name: 'Kai Tak', lat: 22.3323, lng: 114.1966, isTerminal: false },
-    { key: 'SUW', line: 'TML', code: 'SUW', name: 'Sung Wong Toi', lat: 22.3275, lng: 114.1906, isTerminal: false },
-    { key: 'TKW', line: 'TML', code: 'TKW', name: 'To Kwa Wan', lat: 22.3168, lng: 114.1887, isTerminal: false },
-    { key: 'HOM', line: 'TML', code: 'HOM', name: 'Ho Man Tin', lat: 22.3093, lng: 114.1827, isTerminal: false },
-    { key: 'HUH', line: 'TML', code: 'HUH', name: 'Hung Hom', lat: 22.3031, lng: 114.1818, isTerminal: false },
-    { key: 'ETS', line: 'TML', code: 'ETS', name: 'East Tsim Sha Tsui', lat: 22.2963, lng: 114.1748, isTerminal: false },
-    { key: 'AUS', line: 'TML', code: 'AUS', name: 'Austin', lat: 22.3045, lng: 114.1661, isTerminal: false },
-    { key: 'NAC', line: 'TML', code: 'NAC', name: 'Nam Cheong', lat: 22.3253, lng: 114.1539, isTerminal: false },
-    { key: 'MEF', line: 'TML', code: 'MEF', name: 'Mei Foo', lat: 22.3374, lng: 114.1396, isTerminal: false },
-    { key: 'TWW', line: 'TML', code: 'TWW', name: 'Tsuen Wan West', lat: 22.3686, lng: 114.1114, isTerminal: false },
-    { key: 'KSR', line: 'TML', code: 'KSR', name: 'Kam Sheung Road', lat: 22.4343, lng: 114.0645, isTerminal: false },
-    { key: 'YUL_TML', line: 'TML', code: 'YUL', name: 'Yuen Long', lat: 22.4462, lng: 114.0347, isTerminal: false },
-    { key: 'LOP', line: 'TML', code: 'LOP', name: 'Long Ping', lat: 22.4475, lng: 114.0255, isTerminal: false },
-    { key: 'TIS_TML', line: 'TML', code: 'TIS', name: 'Tin Shui Wai', lat: 22.4462, lng: 114.0049, isTerminal: false },
-    { key: 'SIH_TML', line: 'TML', code: 'SIH', name: 'Siu Hong', lat: 22.4111, lng: 113.9789, isTerminal: false },
-    { key: 'TUM_TML', line: 'TML', code: 'TUM', name: 'Tuen Mun', lat: 22.3948, lng: 113.9739, isTerminal: true }
+const RAW_HR_STATIONS = [
+    { code: 'HOK', name: 'Hong Kong', lat: 22.2846, lng: 114.1581 },
+    { code: 'KOW', name: 'Kowloon', lat: 22.3043, lng: 114.1615 },
+    { code: 'TSY', name: 'Tsing Yi', lat: 22.3584, lng: 114.1069 },
+    { code: 'AIR', name: 'Airport', lat: 22.3153, lng: 113.9350 },
+    { code: 'AWE', name: 'AsiaWorld-Expo', lat: 22.3211, lng: 113.9431 },
+    { code: 'OLY', name: 'Olympic', lat: 22.3177, lng: 114.1602 },
+    { code: 'NAC', name: 'Nam Cheong', lat: 22.3253, lng: 114.1539 },
+    { code: 'LAK', name: 'Lai King', lat: 22.3483, lng: 114.1271 },
+    { code: 'SUN', name: 'Sunny Bay', lat: 22.3314, lng: 114.0298 },
+    { code: 'TUC', name: 'Tung Chung', lat: 22.2894, lng: 113.9405 },
+    { code: 'CEN', name: 'Central', lat: 22.2819, lng: 114.1577 },
+    { code: 'ADM', name: 'Admiralty', lat: 22.2795, lng: 114.1646 },
+    { code: 'TST', name: 'Tsim Sha Tsui', lat: 22.2976, lng: 114.1722 },
+    { code: 'JOR', name: 'Jordan', lat: 22.3049, lng: 114.1717 },
+    { code: 'YMT', name: 'Yau Ma Tei', lat: 22.3134, lng: 114.1706 },
+    { code: 'MOK', name: 'Mong Kok', lat: 22.3201, lng: 114.1697 },
+    { code: 'PRE', name: 'Prince Edward', lat: 22.3245, lng: 114.1681 },
+    { code: 'SSP', name: 'Sham Shui Po', lat: 22.3308, lng: 114.1623 },
+    { code: 'CSW', name: 'Cheung Sha Wan', lat: 22.3371, lng: 114.1558 },
+    { code: 'LCK', name: 'Lai Chi Kok', lat: 22.3374, lng: 114.1485 },
+    { code: 'MEF', name: 'Mei Foo', lat: 22.3374, lng: 114.1396 },
+    { code: 'KWF', name: 'Kwai Fong', lat: 22.3565, lng: 114.1278 },
+    { code: 'KWH', name: 'Kwai Hing', lat: 22.3629, lng: 114.1315 },
+    { code: 'TWH', name: 'Tai Wo Hau', lat: 22.3706, lng: 114.1230 },
+    { code: 'TSW', name: 'Tsuen Wan', lat: 22.3739, lng: 114.1186 },
+    { code: 'WHA', name: 'Whampoa', lat: 22.3033, lng: 114.1897 },
+    { code: 'HOM', name: 'Ho Man Tin', lat: 22.3093, lng: 114.1827 },
+    { code: 'SKM', name: 'Shek Kip Mei', lat: 22.3323, lng: 114.1686 },
+    { code: 'KOT', name: 'Kowloon Tong', lat: 22.3371, lng: 114.1758 },
+    { code: 'LOF', name: 'Lok Fu', lat: 22.3377, lng: 114.1873 },
+    { code: 'WTS', name: 'Wong Tai Sin', lat: 22.3413, lng: 114.1932 },
+    { code: 'DIH', name: 'Diamond Hill', lat: 22.3402, lng: 114.2017 },
+    { code: 'CHH', name: 'Choi Hung', lat: 22.3343, lng: 114.2046 },
+    { code: 'KOB', name: 'Kowloon Bay', lat: 22.3236, lng: 114.2141 },
+    { code: 'NTK', name: 'Ngau Tau Kok', lat: 22.3155, lng: 114.2192 },
+    { code: 'KWT', name: 'Kwun Tong', lat: 22.3121, lng: 114.2263 },
+    { code: 'LAT', name: 'Lam Tin', lat: 22.3072, lng: 114.2372 },
+    { code: 'YAT', name: 'Yau Tong', lat: 22.2974, lng: 114.2382 },
+    { code: 'TIK', name: 'Tiu Keng Leng', lat: 22.3047, lng: 114.2526 },
+    { code: 'KET', name: 'Kennedy Town', lat: 22.2811, lng: 114.1276 },
+    { code: 'HKU', name: 'HKU', lat: 22.2844, lng: 114.1352 },
+    { code: 'SYP', name: 'Sai Ying Pun', lat: 22.2870, lng: 114.1420 },
+    { code: 'SHW', name: 'Sheung Wan', lat: 22.2870, lng: 114.1523 },
+    { code: 'WAC', name: 'Wan Chai', lat: 22.2777, lng: 114.1729 },
+    { code: 'CAB', name: 'Causeway Bay', lat: 22.2804, lng: 114.1848 },
+    { code: 'TIN', name: 'Tin Hau', lat: 22.2828, lng: 114.1916 },
+    { code: 'FOH', name: 'Fortress Hill', lat: 22.2882, lng: 114.1939 },
+    { code: 'NOP', name: 'North Point', lat: 22.2917, lng: 114.2007 },
+    { code: 'QUB', name: 'Quarry Bay', lat: 22.2876, lng: 114.2114 },
+    { code: 'TAK', name: 'Tai Koo', lat: 22.2851, lng: 114.2173 },
+    { code: 'SKW', name: 'Sai Wan Ho', lat: 22.2823, lng: 114.2215 },
+    { code: 'SWH', name: 'Shau Kei Wan', lat: 22.2794, lng: 114.2295 },
+    { code: 'HFC', name: 'Heng Fa Chuen', lat: 22.2773, lng: 114.2400 },
+    { code: 'CHW', name: 'Chai Wan', lat: 22.2647, lng: 114.2374 },
+    { code: 'TKO', name: 'Tseung Kwan O', lat: 22.3073, lng: 114.2604 },
+    { code: 'LHP', name: 'LOHAS Park', lat: 22.2952, lng: 114.2690 },
+    { code: 'HAO', name: 'Hang Hau', lat: 22.3157, lng: 114.2651 },
+    { code: 'POA', name: 'Po Lam', lat: 22.3230, lng: 114.2595 },
+    { code: 'EXC', name: 'Exhibition Centre', lat: 22.2818, lng: 114.1758 },
+    { code: 'HUH', name: 'Hung Hom', lat: 22.3031, lng: 114.1818 },
+    { code: 'MKK', name: 'Mong Kok East', lat: 22.3217, lng: 114.1729 },
+    { code: 'TAW', name: 'Tai Wai', lat: 22.3732, lng: 114.1783 },
+    { code: 'SHT', name: 'Sha Tin', lat: 22.3826, lng: 114.1878 },
+    { code: 'FOT', name: 'Fo Tan', lat: 22.3965, lng: 114.1969 },
+    { code: 'UNI', name: 'University', lat: 22.4132, lng: 114.2107 },
+    { code: 'TAP', name: 'Tai Po Market', lat: 22.4447, lng: 114.1678 },
+    { code: 'TWO', name: 'Tai Wo', lat: 22.4513, lng: 114.1611 },
+    { code: 'FAN', name: 'Fanling', lat: 22.4920, lng: 114.1384 },
+    { code: 'SHS', name: 'Sheung Shui', lat: 22.5015, lng: 114.1281 },
+    { code: 'LOW', name: 'Lo Wu', lat: 22.5290, lng: 114.1132 },
+    { code: 'LMC', name: 'Lok Ma Chau', lat: 22.5165, lng: 114.0645 },
+    { code: 'OCP', name: 'Ocean Park', lat: 22.2476, lng: 114.1751 },
+    { code: 'WCH', name: 'Wong Chuk Hang', lat: 22.2478, lng: 114.1687 },
+    { code: 'LET', name: 'Lei Tung', lat: 22.2415, lng: 114.1561 },
+    { code: 'SOH', name: 'South Horizons', lat: 22.2443, lng: 114.1481 },
+    { code: 'WKS', name: 'Wu Kai Sha', lat: 22.4285, lng: 114.2443 },
+    { code: 'MOS', name: 'Ma On Shan', lat: 22.4253, lng: 114.2319 },
+    { code: 'HEO', name: 'Heng On', lat: 22.4173, lng: 114.2255 },
+    { code: 'TSH', name: 'Tai Shui Hang', lat: 22.4087, lng: 114.2215 },
+    { code: 'CIO', name: 'City One', lat: 22.3875, lng: 114.2036 },
+    { code: 'STW', name: 'Sha Tin Wai', lat: 22.3807, lng: 114.1945 },
+    { code: 'CKT', name: 'Che Kung Temple', lat: 22.3755, lng: 114.1866 },
+    { code: 'HIK', name: 'Hin Keng', lat: 22.3637, lng: 114.1717 },
+    { code: 'KAT', name: 'Kai Tak', lat: 22.3323, lng: 114.1966 },
+    { code: 'SUW', name: 'Sung Wong Toi', lat: 22.3275, lng: 114.1906 },
+    { code: 'TKW', name: 'To Kwa Wan', lat: 22.3168, lng: 114.1887 },
+    { code: 'ETS', name: 'East Tsim Sha Tsui', lat: 22.2963, lng: 114.1748 },
+    { code: 'AUS', name: 'Austin', lat: 22.3045, lng: 114.1661 },
+    { code: 'TWW', name: 'Tsuen Wan West', lat: 22.3686, lng: 114.1114 },
+    { code: 'KSR', name: 'Kam Sheung Road', lat: 22.4343, lng: 114.0645 },
+    { code: 'YUL', name: 'Yuen Long', lat: 22.4462, lng: 114.0347 },
+    { code: 'LOP', name: 'Long Ping', lat: 22.4475, lng: 114.0255 },
+    { code: 'TIS', name: 'Tin Shui Wai', lat: 22.4462, lng: 114.0049 },
+    { code: 'SIH', name: 'Siu Hong', lat: 22.4111, lng: 113.9789 },
+    { code: 'TUM', name: 'Tuen Mun', lat: 22.3948, lng: 113.9739 },
+    { code: 'DIS', name: 'Disneyland Resort', lat: 22.3150, lng: 114.0445 }
 ];
+
+const HR_ROUTES = {
+    'AEL': ['HOK', 'KOW', 'TSY', 'AIR', 'AWE'],
+    'TCL': ['HOK', 'KOW', 'OLY', 'NAC', 'LAK', 'TSY', 'SUN', 'TUC'],
+    'TWL': ['CEN', 'ADM', 'TST', 'JOR', 'YMT', 'MOK', 'PRE', 'SSP', 'CSW', 'LCK', 'MEF', 'LAK', 'KWF', 'KWH', 'TWH', 'TSW'],
+    'KTL': ['WHA', 'HOM', 'YMT', 'MOK', 'PRE', 'SKM', 'KOT', 'LOF', 'WTS', 'DIH', 'CHH', 'KOB', 'NTK', 'KWT', 'LAT', 'YAT', 'TIK'],
+    'ISL': ['KET', 'HKU', 'SYP', 'SHW', 'CEN', 'ADM', 'WAC', 'CAB', 'TIN', 'FOH', 'NOP', 'QUB', 'TAK', 'SKW', 'SWH', 'HFC', 'CHW'],
+    'SIL': ['ADM', 'OCP', 'WCH', 'LET', 'SOH'],
+    'TML': ['WKS', 'MOS', 'HEO', 'TSH', 'CIO', 'STW', 'CKT', 'TAW', 'HIK', 'DIH', 'KAT', 'SUW', 'TKW', 'HOM', 'HUH', 'ETS', 'AUS', 'NAC', 'MEF', 'TWW', 'KSR', 'YUL', 'LOP', 'TIS', 'SIH', 'TUM'],
+    'DRL': ['SUN', 'DIS'],
+    // Branches Split explicitly
+    'EAL_LW': ['ADM', 'EXC', 'HUH', 'MKK', 'KOT', 'TAW', 'SHT', 'FOT', 'UNI', 'TAP', 'TWO', 'FAN', 'SHS', 'LOW'],
+    'EAL_LMC': ['ADM', 'EXC', 'HUH', 'MKK', 'KOT', 'TAW', 'SHT', 'FOT', 'UNI', 'TAP', 'TWO', 'FAN', 'SHS', 'LMC'],
+    'TKL_POA': ['NOP', 'QUB', 'YAT', 'TIK', 'TKO', 'HAO', 'POA'],
+    'TKL_LHP': ['NOP', 'QUB', 'YAT', 'TIK', 'TKO', 'LHP']
+};
 
 // Light Rail Station Directory
 const LR_STOPS_DICT = {
@@ -486,7 +487,9 @@ const LR_STOPS_DICT = {
 // Map stops dynamically to actual Light Rail Route sequences
 const LR_ROUTES = {
   'LR_505': ['920', '265', '270', '280', '295', '060', '190', '180', '170', '160', '150', '140', '130', '120', '110', '100'], 
+  'LR_506P':['001', '240', '250', '260', '265', '270', '280', '295', '300'],
   'LR_507': ['001', '240', '250', '260', '265', '270', '280', '295', '070', '075', '230', '212', '160', '150', '140'], 
+  'LR_507P':['100', '110', '120', '130', '140', '150', '160', '212', '230', '075', '070', '295', '280', '270', '265', '260', '250', '240', '001'],
   'LR_610': ['001', '010', '015', '020', '030', '040', '050', '200', '170', '080', '090', '100', '430', '560', '570', '580', '590', '600'], 
   'LR_614': ['001', '240', '250', '260', '265', '270', '280', '300', '320', '330', '100', '430', '560', '570', '580', '590', '600'],
   'LR_614P': ['001', '240', '250', '260', '265', '270', '280', '300', '320', '330', '100'],
@@ -495,15 +498,17 @@ const LR_ROUTES = {
   'LR_705': ['430', '435', '445', '448', '450', '455', '460', '468', '480', '500', '510', '520', '530', '540', '550', '430'],
   'LR_706': ['430', '550', '540', '530', '520', '510', '500', '480', '468', '460', '455', '450', '448', '445', '435', '430'],
   'LR_751': ['275', '270', '280', '295', '070', '075', '080', '090', '100', '430', '445', '448', '450', '480', '500', '550'],
+  'LR_751P':['430', '435', '445', '448', '450', '455', '460', '468', '480', '500', '550'],
   'LR_761P':['550', '540', '530', '520', '510', '460', '455', '430', '560', '570', '580', '590', '600']
 };
 
+let STATIONS = [];
 let currentView = 'main';
 let previousView = 'main';
 let allStops = [];
 let groupedRoutes = []; 
 let routeStopsCache = {};
-let favRoutes = JSON.parse(localStorage.getItem('mtr_fav_routes_v3') || '[]');
+let favRoutes = JSON.parse(localStorage.getItem('mtr_fav_routes_v4') || '[]');
 
 let lastKnownPos = null;
 let currentNearestStopKey = null;
@@ -553,11 +558,10 @@ function findNearestStopIdx(stops, pos) {
     return best;
 }
 
-// Ported Load Factor logic from Pulse HK Heavy Rail
 function getExpectedHeadway(lineCode, hour) {
     const isPeak = (hour >= 7 && hour <= 9) || (hour >= 17 && hour <= 19);
-    const peakHeadways = { 'TWL': 2.0, 'ISL': 2.0, 'KTL': 2.1, 'TML': 2.7, 'TKL': 2.5, 'EAL': 2.7, 'TCL': 3.6, 'SIL': 3.3, 'AEL': 10.0 };
-    const offPeakHeadways = { 'TWL': 3.5, 'ISL': 3.6, 'KTL': 4.0, 'TML': 5.5, 'TKL': 5.0, 'EAL': 6.0, 'TCL': 7.0, 'SIL': 6.0, 'AEL': 15.0 };
+    const peakHeadways = { 'TWL': 2.0, 'ISL': 2.0, 'KTL': 2.1, 'TML': 2.7, 'TKL': 2.5, 'EAL': 2.7, 'TCL': 3.6, 'SIL': 3.3, 'AEL': 10.0, 'DRL': 4.5 };
+    const offPeakHeadways = { 'TWL': 3.5, 'ISL': 3.6, 'KTL': 4.0, 'TML': 5.5, 'TKL': 5.0, 'EAL': 6.0, 'TCL': 7.0, 'SIL': 6.0, 'AEL': 15.0, 'DRL': 10.0 };
     return isPeak ? (peakHeadways[lineCode] || 3.0) : (offPeakHeadways[lineCode] || 5.0);
 }
 
@@ -610,7 +614,6 @@ function calculateLoadHR(trains, index, isTerminal, lineCode, destCode, currentI
     return Math.min(99, Math.max(5, Math.round(loadFactor)));
 }
 
-// Ported Load Factor logic from Pulse HK Light Rail
 function getBaselineLoadLRT(hour) {
     const isPeak = (hour >= 7 && hour < 10) || (hour >= 17 && hour < 20);
     const isLunch = hour >= 12 && hour < 14;
@@ -648,7 +651,17 @@ function calculateLoadLRT(trains, index, train_length, currentRouteNo, currentHo
 // ==========================================
 
 function buildInternalData() {
-    // Generate Light Rail stops dynamically to attach to proper routes
+    // Generate Heavy Rail stops
+    Object.keys(HR_ROUTES).forEach(hrKey => {
+        HR_ROUTES[hrKey].forEach(code => {
+            const s = RAW_HR_STATIONS.find(stn => stn.code === code);
+            if (s) {
+                STATIONS.push({ key: `${hrKey}_${code}`, line: hrKey, code: code, name: s.name, lat: s.lat, lng: s.lng, isTerminal: (code === HR_ROUTES[hrKey][0] || code === HR_ROUTES[hrKey][HR_ROUTES[hrKey].length - 1]) });
+            }
+        });
+    });
+
+    // Generate Light Rail stops
     Object.keys(LR_ROUTES).forEach(lrKey => {
         LR_ROUTES[lrKey].forEach(code => {
             const s = LR_STOPS_DICT[code];
@@ -662,7 +675,7 @@ function buildInternalData() {
         const meta = LINE_META[key];
         groupedRoutes.push({
             key: key,
-            routeNo: key.replace('LR_', ''),
+            routeNo: key.replace('LR_', '').replace('EAL_', 'EAL ').replace('TKL_', 'TKL '),
             dest_e: meta.name,
             company: meta.network === 'HR' ? 'MTR Heavy Rail' : 'MTR Light Rail',
             network: meta.network,
@@ -684,8 +697,6 @@ function buildInternalData() {
         const meta = LINE_META[s.line];
         const network = meta ? meta.network : 'HR';
         
-        // CRITICAL FIX: Include the network in the unique stop key so Light Rail and Heavy Rail
-        // stations that share the exact same location (like Tuen Mun) are tracked distinctly.
         const key = getGlobalStopKey({name: s.name, lat: s.lat}, network);
         
         if (!uniqueStops.has(key)) {
@@ -733,18 +744,31 @@ async function fetchMtrEtaRaw(group, stopKey) {
 
     try {
         if (group.network === 'HR') {
-            const url = `https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=${group.key}&sta=${stn.code}`;
+            const apiLineCode = LINE_META[group.key].apiCode || group.key; 
+            const url = `https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=${apiLineCode}&sta=${stn.code}`;
             const res = await fetchJSONCached(url);
-            if(res && res.status === 1 && res.data && res.data[`${group.key}-${stn.code}`]) {
-                const data = res.data[`${group.key}-${stn.code}`];
+            
+            if(res && res.status === 1 && res.data && res.data[`${apiLineCode}-${stn.code}`]) {
+                const data = res.data[`${apiLineCode}-${stn.code}`];
+                
+                // Allow only trains that go to destinations on THIS specific branch
+                const validDests = routeStopsCache[group.key].map(s => s.code);
                 
                 const processDir = (trainsArray) => {
                     const safeArray = trainsArray || []; 
                     safeArray.forEach((t, i) => {
-                        const destObj = STATIONS.find(s => s.code === t.dest && LINE_META[s.line].network === 'HR');
+                        // Filter out branch cross-contamination
+                        if (!validDests.includes(t.dest) && t.dest !== 'ADM') return;
+                        if (t.dest === 'LMC' && group.key === 'EAL_LW') return;
+                        if (t.dest === 'LOW' && group.key === 'EAL_LMC') return;
+                        if (t.dest === 'LHP' && group.key === 'TKL_POA') return;
+                        if (t.dest === 'POA' && group.key === 'TKL_LHP') return;
+
+                        const destObj = RAW_HR_STATIONS.find(s => s.code === t.dest);
                         const destName = destObj ? destObj.name : t.dest;
                         const ttnt = parseInt(t.ttnt) || 0;
                         const load = calculateLoadHR(safeArray, i, stn.isTerminal, group.key, t.dest, currentIdx, currentHour);
+                        
                         results.push({
                             destName: `To ${destName}`,
                             mins: ttnt,
@@ -1325,7 +1349,6 @@ function renderSearchResults() {
     
     if (!query) {
         if (activeRegionFilter === 'ALL') {
-            // ONLY SHOW NEARBY FOR 'ALL NETWORKS'
             let nearby = getNearbyRoutes(2.5, 'ALL');
             
             if (!lastKnownPos && nearby.length === 0) {
@@ -1356,7 +1379,6 @@ function renderSearchResults() {
             });
             listEl.innerHTML = html;
         } else {
-            // ALLOW BROWSING OF ALL LINES FOR SPECIFIC NETWORKS
             let matches = groupedRoutes.filter(g => g.network === activeRegionFilter);
             let title = activeRegionFilter === 'HR' ? 'ALL HEAVY RAIL LINES' : 'ALL LIGHT RAIL ROUTES';
             
@@ -1423,7 +1445,7 @@ function renderFavList() {
 
 function removeFavRoute(key) {
     favRoutes = favRoutes.filter(k => k !== key);
-    localStorage.setItem('mtr_fav_routes_v3', JSON.stringify(favRoutes));
+    localStorage.setItem('mtr_fav_routes_v4', JSON.stringify(favRoutes));
     renderFavList();
 }
 function openFavModal() { document.getElementById('fav-modal').style.display = 'flex'; document.getElementById('favSearchInput').value = ''; renderFavSearch(); }
@@ -1451,7 +1473,7 @@ function renderFavSearch() {
 }
 
 function addFavFromModal(key) {
-    if(!favRoutes.includes(key)) { favRoutes.push(key); localStorage.setItem('mtr_fav_routes_v3', JSON.stringify(favRoutes)); }
+    if(!favRoutes.includes(key)) { favRoutes.push(key); localStorage.setItem('mtr_fav_routes_v4', JSON.stringify(favRoutes)); }
     closeFavModal(); renderFavList();
 }
 
