@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title>Pulse HK - Transit Network</title>
 
-<!-- Local Leaflet CSS for Map -->
-<link rel="stylesheet" href="leaflet.css">
+<!-- Leaflet CSS via CDN -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 
 <style>
   /* ==========================================
@@ -137,9 +137,9 @@
   
   .stop-item { position: relative; padding: 20px 16px 20px 50px; border-bottom: 1px solid var(--border-color); cursor: pointer; }
   .stop-line { position: absolute; left: 28px; top: 0; bottom: 0; width: 4px; z-index: 1; }
-  .stop-item:first-child .stop-line { top: 34px; }
-  .stop-item:last-child .stop-line { bottom: auto; height: 34px; }
-  .stop-dot { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 50%; background: #aaa; border: 4px solid var(--bg-light); z-index: 2; }
+  .stop-item:first-child .stop-line { top: 32px; }
+  .stop-item:last-child .stop-line { bottom: auto; height: 32px; }
+  .stop-dot { position: absolute; left: 20px; top: 22px; width: 20px; height: 20px; border-radius: 50%; background: #aaa; border: 4px solid var(--bg-light); z-index: 2; }
   .stop-item.active-stop .stop-dot { box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.3); }
   .stop-name { font-size: 1.1rem; font-weight: 600; color: var(--text-main); }
   .nearest-tag { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; background: rgba(10,132,255,0.2); color: var(--accent-blue); border: 1px solid rgba(10,132,255,0.4); vertical-align: middle; text-transform: uppercase; }
@@ -174,7 +174,6 @@
   .fav-modal-search input:focus { border-color: var(--theme-color); outline: none; }
   .fav-modal-results { flex: 1; overflow-y: auto; background: var(--bg-light); }
 
-  .dark-tiles { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
   .custom-user-icon div { width: 100% !important; height: 100% !important; background: #0a84ff !important; border-radius: 50% !important; border: 3px solid white !important; box-shadow: 0 0 12px rgba(0,0,0,0.8) !important; }
 </style>
 </head>
@@ -266,7 +265,8 @@
     </div>
 </div>
 
-<script src="leaflet.js"></script>
+<!-- Leaflet JS via CDN -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <script>
 // ==========================================
@@ -658,11 +658,16 @@ function buildInternalData() {
 }
 
 async function fetchJSON(url) {
-  try {
-      const response = await fetch(url, { cache: 'no-store' });
-      if (!response.ok) return null;
-      return await response.json();
-  } catch(e) { return null; }
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 sec timeout to prevent infinite 'Loading...'
+        const response = await fetch(url, { cache: 'no-store', signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!response.ok) return null;
+        return await response.json();
+    } catch(e) { 
+        return null; 
+    }
 }
 
 async function fetchMtrEtaRaw(group, stopKey) {
@@ -673,57 +678,64 @@ async function fetchMtrEtaRaw(group, stopKey) {
     const currentHour = new Date().getHours();
     const currentIdx = routeStopsCache[group.key].findIndex(s => s.code === stn.code);
 
-    if (group.network === 'HR') {
-        const url = `https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=${group.key}&sta=${stn.code}`;
-        const res = await fetchJSON(url);
-        if(res && res.data && res.data[`${group.key}-${stn.code}`]) {
-            const data = res.data[`${group.key}-${stn.code}`];
-            const processDir = (trains) => {
-                (trains || []).forEach((t, i) => {
-                    const destObj = STATIONS.find(s => s.code === t.dest);
-                    const destName = destObj ? destObj.name : t.dest;
-                    const ttnt = parseInt(t.ttnt) || 0;
-                    const load = calculateLoadHR(trains, i, stn.isTerminal, group.key, t.dest, currentIdx, currentHour);
-                    results.push({
-                        destName: `To ${destName}`,
-                        mins: ttnt,
-                        timeText: (t.ttnt === "0" || t.ttnt === "-") ? 'Due' : `${ttnt}m`,
-                        platText: `Plat ${t.plat}`,
-                        loadFactor: load,
-                        carInfo: null
+    try {
+        if (group.network === 'HR') {
+            const url = `https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=${group.key}&sta=${stn.code}`;
+            const res = await fetchJSON(url);
+            if(res && res.status === 1 && res.data && res.data[`${group.key}-${stn.code}`]) {
+                const data = res.data[`${group.key}-${stn.code}`];
+                
+                const processDir = (trainsArray) => {
+                    const safeArray = trainsArray || []; // Prevent undefined crash if UP/DOWN is missing
+                    safeArray.forEach((t, i) => {
+                        const destObj = STATIONS.find(s => s.code === t.dest);
+                        const destName = destObj ? destObj.name : t.dest;
+                        const ttnt = parseInt(t.ttnt) || 0;
+                        const load = calculateLoadHR(safeArray, i, stn.isTerminal, group.key, t.dest, currentIdx, currentHour);
+                        results.push({
+                            destName: `To ${destName}`,
+                            mins: ttnt,
+                            timeText: (t.ttnt === "0" || t.ttnt === "-") ? 'Due' : `${ttnt}m`,
+                            platText: `Plat ${t.plat}`,
+                            loadFactor: load,
+                            carInfo: null
+                        });
+                    });
+                };
+                processDir(data.UP);
+                processDir(data.DOWN);
+            }
+        } else {
+            const url = `https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=${parseInt(stn.code, 10)}`;
+            const res = await fetchJSON(url);
+            if(res && res.status === 1 && res.platform_list) {
+                res.platform_list.forEach(plat => {
+                    const safeArray = plat.route_list || [];
+                    safeArray.forEach((t, i) => {
+                        const timeStr = t.time_en ? t.time_en.trim().toLowerCase() : '';
+                        let mins = 99, timeText = timeStr;
+                        if (timeStr === '-' || timeStr === 'arriving') {
+                            mins = 0; timeText = 'Due';
+                        } else {
+                            const m = timeStr.match(/\d+/);
+                            if(m) { mins = parseInt(m[0], 10); timeText = `${mins}m`; }
+                        }
+                        const load = calculateLoadLRT(safeArray, i, t.train_length, t.route_no, currentHour);
+                        const isTwoCar = (t.train_length === "2" || t.train_length === 2);
+                        results.push({
+                            destName: `${t.route_no} To ${t.dest_en}`,
+                            mins: mins,
+                            timeText: timeText,
+                            platText: `Plat ${plat.platform_id}`,
+                            loadFactor: load,
+                            carInfo: isTwoCar ? '2-Car' : '1-Car'
+                        });
                     });
                 });
-            };
-            processDir(data.UP);
-            processDir(data.DOWN);
+            }
         }
-    } else {
-        const url = `https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule?station_id=${parseInt(stn.code, 10)}`;
-        const res = await fetchJSON(url);
-        if(res && res.platform_list) {
-            res.platform_list.forEach(plat => {
-                (plat.route_list || []).forEach((t, i) => {
-                    const timeStr = t.time_en ? t.time_en.trim().toLowerCase() : '';
-                    let mins = 99, timeText = timeStr;
-                    if (timeStr === '-' || timeStr === 'arriving') {
-                        mins = 0; timeText = 'Due';
-                    } else {
-                        const m = timeStr.match(/\d+/);
-                        if(m) { mins = parseInt(m[0], 10); timeText = `${mins}m`; }
-                    }
-                    const load = calculateLoadLRT(plat.route_list, i, t.train_length, t.route_no, currentHour);
-                    const isTwoCar = (t.train_length === "2" || t.train_length === 2);
-                    results.push({
-                        destName: `${t.route_no} To ${t.dest_en}`,
-                        mins: mins,
-                        timeText: timeText,
-                        platText: `Plat ${plat.platform_id}`,
-                        loadFactor: load,
-                        carInfo: isTwoCar ? '2-Car' : '1-Car'
-                    });
-                });
-            });
-        }
+    } catch(e) {
+        console.error(e);
     }
     return results.sort((a,b) => a.mins - b.mins);
 }
@@ -739,7 +751,12 @@ function makeUserIcon() {
 function refreshGPS(timeoutMs = 4000) {
     return new Promise((resolve) => {
         if (!navigator.geolocation) { resolve(lastKnownPos); return; }
+        
+        // Strict fallback timeout to prevent app hanging on iOS 
+        const fallback = setTimeout(() => resolve(lastKnownPos), timeoutMs + 500);
+        
         navigator.geolocation.getCurrentPosition((pos) => {
+            clearTimeout(fallback);
             lastKnownPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
             const icon = makeUserIcon();
             if (mapInstance) {
@@ -751,7 +768,10 @@ function refreshGPS(timeoutMs = 4000) {
                 else userMarkerGlobal.setLatLng([lastKnownPos.lat, lastKnownPos.lon]);
             }
             resolve(lastKnownPos);
-        }, () => resolve(lastKnownPos), { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 10000 });
+        }, () => {
+            clearTimeout(fallback);
+            resolve(lastKnownPos);
+        }, { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 10000 });
     });
 }
 
@@ -762,7 +782,14 @@ function locateNearestStopPromise() {
             renderMainNearby(); resolve(false); return;
         }
         document.getElementById('mainLocationText').innerText = 'Locating...';
+        
+        const fallback = setTimeout(() => {
+            document.getElementById('mainLocationText').innerText = 'Location Failed';
+            renderMainNearby(); resolve(false);
+        }, 5000);
+
         navigator.geolocation.getCurrentPosition((pos) => {
+            clearTimeout(fallback);
             lastKnownPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
             const userIcon = makeUserIcon();
             
@@ -793,30 +820,30 @@ function locateNearestStopPromise() {
             }
             resolve(true);
         }, () => {
+            clearTimeout(fallback);
             document.getElementById('mainLocationText').innerText = 'Location Access Denied';
             renderMainNearby(); resolve(false);
-        }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 });
+        }, { enableHighAccuracy: true, timeout: 4500, maximumAge: 10000 });
     });
 }
 
 function initDetailMap() {
     mapInstance = L.map('map-container', { zoomControl: false }).setView([22.3, 114.16], 11);
-    L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/wgs84/{z}/{x}/{y}.png', {
-        className: 'dark-tiles', attribution: '&copy; Hong Kong GeoData Store'
-    }).addTo(mapInstance);
-    L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/en/wgs84/{z}/{x}/{y}.png', {
-        className: 'dark-tiles'
+    // Swapped to universally reliable CartoDB Dark Matter to prevent initial crash
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 20
     }).addTo(mapInstance);
     L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 }
 
 function initGlobalMap() {
     globalMapInstance = L.map('global-map-container', { zoomControl: false }).setView([22.3, 114.16], 12);
-    L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/wgs84/{z}/{x}/{y}.png', {
-        className: 'dark-tiles', attribution: '&copy; Hong Kong GeoData Store'
-    }).addTo(globalMapInstance);
-    L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/en/wgs84/{z}/{x}/{y}.png', {
-        className: 'dark-tiles'
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 20
     }).addTo(globalMapInstance);
     L.control.zoom({ position: 'bottomright' }).addTo(globalMapInstance);
     
@@ -891,6 +918,7 @@ async function initApp() {
     startTimer();
   } catch (err) {
     document.getElementById('mainRouteList').innerHTML = '<div class="text-center" style="color:#ef4444;">Error building network.</div>';
+    console.error(err);
   }
 }
 
@@ -1021,7 +1049,7 @@ function openRouteDetail(groupKey) {
         renderStopList();
         
         await autoSelectNearestStop(token);
-    }, 100);
+    }, 250); // Increased delay slightly to guarantee map container completes drawing
 }
 
 function navigateBack() { switchTab(previousView); }
@@ -1461,3 +1489,4 @@ window.onload = initApp;
 </script>
 </body>
 </html>
+
