@@ -286,12 +286,14 @@ const LINE_META = {
     'ISL': { network: 'HR', name: 'Island Line', colorHex: '#2563eb' },
     'KTL': { network: 'HR', name: 'Kwun Tong Line', colorHex: '#059669' },
     
-    // Light Rail separated into distinct Bus-like Routes
+    // Light Rail Routes
     'LR_505': { network: 'LRT', name: 'Sam Shing', colorHex: '#eab308' },
     'LR_507': { network: 'LRT', name: 'Tin King', colorHex: '#22c55e' },
     'LR_610': { network: 'LRT', name: 'Yuen Long', colorHex: '#8b5cf6' },
     'LR_614': { network: 'LRT', name: 'Yuen Long', colorHex: '#06b6d4' },
+    'LR_614P': { network: 'LRT', name: 'Siu Hong', colorHex: '#f43f5e' },
     'LR_615': { network: 'LRT', name: 'Yuen Long', colorHex: '#eab308' },
+    'LR_615P': { network: 'LRT', name: 'Siu Hong', colorHex: '#0ea5e9' },
     'LR_705': { network: 'LRT', name: 'TSW Circular (CCW)', colorHex: '#84cc16' },
     'LR_706': { network: 'LRT', name: 'TSW Circular (CW)', colorHex: '#d946ef' },
     'LR_751': { network: 'LRT', name: 'Tin Yat', colorHex: '#f97316' },
@@ -483,11 +485,13 @@ const LR_STOPS_DICT = {
 
 // Map stops dynamically to actual Light Rail Route sequences
 const LR_ROUTES = {
-  'LR_505': ['920', '265', '270', '280', '295', '300', '320', '330', '100'], 
-  'LR_507': ['001', '240', '260', '270', '280', '295', '070', '075', '230', '212', '160', '150', '140'], 
-  'LR_610': ['001', '010', '015', '020', '030', '040', '050', '060', '070', '080', '090', '100', '430', '560', '570', '580', '590', '600'], 
-  'LR_614': ['001', '240', '260', '270', '280', '295', '300', '320', '330', '100', '430', '560', '570', '580', '590', '600'],
-  'LR_615': ['001', '010', '015', '020', '030', '040', '050', '170', '160', '150', '140', '130', '120', '110', '100', '430', '560', '570', '580', '590', '600'],
+  'LR_505': ['920', '265', '270', '280', '295', '060', '190', '180', '170', '160', '150', '140', '130', '120', '110', '100'], 
+  'LR_507': ['001', '240', '250', '260', '265', '270', '280', '295', '070', '075', '230', '212', '160', '150', '140'], 
+  'LR_610': ['001', '010', '015', '020', '030', '040', '050', '200', '170', '080', '090', '100', '430', '560', '570', '580', '590', '600'], 
+  'LR_614': ['001', '240', '250', '260', '265', '270', '280', '300', '320', '330', '100', '430', '560', '570', '580', '590', '600'],
+  'LR_614P': ['001', '240', '250', '260', '265', '270', '280', '300', '320', '330', '100'],
+  'LR_615': ['001', '010', '015', '020', '030', '040', '050', '200', '170', '160', '150', '140', '130', '120', '110', '100', '430', '560', '570', '580', '590', '600'],
+  'LR_615P': ['001', '010', '015', '020', '030', '040', '050', '200', '170', '160', '150', '140', '130', '120', '110', '100'],
   'LR_705': ['430', '435', '445', '448', '450', '455', '460', '468', '480', '500', '510', '520', '530', '540', '550', '430'],
   'LR_706': ['430', '550', '540', '530', '520', '510', '500', '480', '468', '460', '455', '450', '448', '445', '435', '430'],
   'LR_751': ['275', '270', '280', '295', '070', '075', '080', '090', '100', '430', '445', '448', '450', '480', '500', '550'],
@@ -499,7 +503,7 @@ let previousView = 'main';
 let allStops = [];
 let groupedRoutes = []; 
 let routeStopsCache = {};
-let favRoutes = JSON.parse(localStorage.getItem('mtr_fav_routes_v2') || '[]');
+let favRoutes = JSON.parse(localStorage.getItem('mtr_fav_routes_v3') || '[]');
 
 let lastKnownPos = null;
 let currentNearestStopKey = null;
@@ -531,7 +535,7 @@ const requestCache = new Map();
 // ZONE 2: ALGORITHMS & DYNAMIC LOAD LOGIC
 // ==========================================
 
-function getGlobalStopKey(s) { return `${s.name}_${parseFloat(s.lat).toFixed(2)}`; }
+function getGlobalStopKey(s, network) { return `${s.name}_${parseFloat(s.lat).toFixed(2)}_${network}`; }
 
 function calculateDistanceKm(lat1, lon1, lat2, lon2) {
   if (lat1 === 0 || lat2 === 0) return Infinity;
@@ -644,7 +648,7 @@ function calculateLoadLRT(trains, index, train_length, currentRouteNo, currentHo
 // ==========================================
 
 function buildInternalData() {
-    // Generate Light Rail stops dynamically to attach to proper routes instead of zones
+    // Generate Light Rail stops dynamically to attach to proper routes
     Object.keys(LR_ROUTES).forEach(lrKey => {
         LR_ROUTES[lrKey].forEach(code => {
             const s = LR_STOPS_DICT[code];
@@ -667,7 +671,7 @@ function buildInternalData() {
         
         routeStopsCache[key] = STATIONS.filter(s => s.line === key).map((s, idx) => ({
             ...s,
-            stopKey: getGlobalStopKey({name: s.name, lat: s.lat}),
+            stopKey: getGlobalStopKey({name: s.name, lat: s.lat}, meta.network),
             stopName_e: s.name,
             latitude: s.lat,
             longitude: s.lng,
@@ -677,7 +681,13 @@ function buildInternalData() {
     
     const uniqueStops = new Map();
     STATIONS.forEach(s => {
-        const key = getGlobalStopKey({name: s.name, lat: s.lat});
+        const meta = LINE_META[s.line];
+        const network = meta ? meta.network : 'HR';
+        
+        // CRITICAL FIX: Include the network in the unique stop key so Light Rail and Heavy Rail
+        // stations that share the exact same location (like Tuen Mun) are tracked distinctly.
+        const key = getGlobalStopKey({name: s.name, lat: s.lat}, network);
+        
         if (!uniqueStops.has(key)) {
             uniqueStops.set(key, { 
                 stopKey: key, 
@@ -686,6 +696,7 @@ function buildInternalData() {
                 longitude: s.lng,
                 code: s.code,
                 isTerminal: s.isTerminal,
+                network: network,
                 routes: new Set([s.line]) 
             });
         } else {
@@ -730,7 +741,7 @@ async function fetchMtrEtaRaw(group, stopKey) {
                 const processDir = (trainsArray) => {
                     const safeArray = trainsArray || []; 
                     safeArray.forEach((t, i) => {
-                        const destObj = STATIONS.find(s => s.code === t.dest);
+                        const destObj = STATIONS.find(s => s.code === t.dest && LINE_META[s.line].network === 'HR');
                         const destName = destObj ? destObj.name : t.dest;
                         const ttnt = parseInt(t.ttnt) || 0;
                         const load = calculateLoadHR(safeArray, i, stn.isTerminal, group.key, t.dest, currentIdx, currentHour);
@@ -754,9 +765,8 @@ async function fetchMtrEtaRaw(group, stopKey) {
                 res.platform_list.forEach(plat => {
                     const safeArray = plat.route_list || [];
                     safeArray.forEach((t, i) => {
-                        // Crucial Fix: Only allow the ETA to render if it belongs to the selected Light Rail Route
                         const targetRouteNo = group.key.replace('LR_', '');
-                        if (t.route_no !== targetRouteNo) return;
+                        if (t.route_no.trim() !== targetRouteNo) return;
 
                         const timeStr = t.time_en ? t.time_en.trim().toLowerCase() : '';
                         let mins = 99, timeText = timeStr;
@@ -872,23 +882,29 @@ function locateNearestStopPromise() {
 
 function initDetailMap() {
     mapInstance = L.map('map-container', { zoomControl: false }).setView([22.3, 114.16], 11);
+    
+    // Officially migrating to HK GeoData Store API (Completely free, no watermarks, no API key required)
     L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/wgs84/{z}/{x}/{y}.png', {
         className: 'dark-tiles', attribution: '&copy; Hong Kong GeoData Store'
     }).addTo(mapInstance);
     L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/en/wgs84/{z}/{x}/{y}.png', {
         className: 'dark-tiles'
     }).addTo(mapInstance);
+    
     L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
 }
 
 function initGlobalMap() {
     globalMapInstance = L.map('global-map-container', { zoomControl: false }).setView([22.3, 114.16], 12);
+    
+    // Officially migrating to HK GeoData Store API 
     L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/wgs84/{z}/{x}/{y}.png', {
         className: 'dark-tiles', attribution: '&copy; Hong Kong GeoData Store'
     }).addTo(globalMapInstance);
     L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/hk/en/wgs84/{z}/{x}/{y}.png', {
         className: 'dark-tiles'
     }).addTo(globalMapInstance);
+    
     L.control.zoom({ position: 'bottomright' }).addTo(globalMapInstance);
     
     if (lastKnownPos) {
@@ -1308,39 +1324,59 @@ function renderSearchResults() {
     const listEl = document.getElementById('searchResults');
     
     if (!query) {
-        let nearby = getNearbyRoutes(1.5, activeRegionFilter);
-        
-        if (!lastKnownPos && nearby.length === 0) {
-            listEl.innerHTML = `<div class="text-center" style="padding-top:60px;"><div style="font-size:3rem; margin-bottom:12px;">📍</div><div style="font-weight:700;">Locating nearby stations...</div></div>`;
-            return;
-        }
-        if (nearby.length === 0) {
-            let fallback = groupedRoutes.filter(g => activeRegionFilter === 'ALL' || g.network === activeRegionFilter);
-            if (fallback.length > 0) nearby = fallback;
-            else {
-                listEl.innerHTML = `<div class="text-center" style="padding-top:60px;"><div style="font-size:3rem; margin-bottom:12px;">🚆</div><div style="font-weight:700;">No networks found for ${activeRegionFilter}</div></div>`;
+        if (activeRegionFilter === 'ALL') {
+            // ONLY SHOW NEARBY FOR 'ALL NETWORKS'
+            let nearby = getNearbyRoutes(2.5, 'ALL');
+            
+            if (!lastKnownPos && nearby.length === 0) {
+                listEl.innerHTML = `<div class="text-center" style="padding-top:60px;"><div style="font-size:3rem; margin-bottom:12px;">📍</div><div style="font-weight:700;">Locating nearby stations...</div></div>`;
                 return;
             }
-        }
+            if (nearby.length === 0) {
+                listEl.innerHTML = `<div class="text-center" style="padding-top:60px;"><div style="font-size:3rem; margin-bottom:12px;">🚆</div><div style="font-weight:700;">No networks found nearby</div></div>`;
+                return;
+            }
 
-        const firstValid = nearby.find(g => g.nearestDistKm !== undefined && !isNaN(g.nearestDistKm));
-        const headerLabel = firstValid ? `${firstValid.nearestStopName} (${firstValid.nearestDistKm.toFixed(1)}km)` : 'All Lines';
+            const firstValid = nearby.find(g => g.nearestDistKm !== undefined && !isNaN(g.nearestDistKm));
+            const headerLabel = firstValid ? `${firstValid.nearestStopName} (${firstValid.nearestDistKm.toFixed(1)}km)` : 'Nearby Lines';
 
-        let html = `
-            <div style="padding: 12px 16px; font-size: 0.85rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; background: var(--bg-white); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 5;">
-                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 75%;">📍 Nearest (${headerLabel})</span>
-                <span style="color: var(--accent-blue); font-size: 0.8rem; flex-shrink: 0;">${nearby.length} Lines</span>
-            </div>
-        `;
-        nearby.forEach(g => {
-            html += `
-              <div class="route-list-item" onclick="openRouteDetail('${g.key}')">
-                  <div class="route-no-col" style="background-color:${g.colorHex};">${g.routeNo}</div>
-                  <div class="route-info-col"><div class="route-dest">${g.dest_e}</div><div class="route-sub">${g.company}</div></div>
-              </div>
+            let html = `
+                <div style="padding: 12px 16px; font-size: 0.85rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; background: var(--bg-white); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 5;">
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 75%;">📍 Nearest (${headerLabel})</span>
+                    <span style="color: var(--accent-blue); font-size: 0.8rem; flex-shrink: 0;">${nearby.length} LINES</span>
+                </div>
             `;
-        });
-        listEl.innerHTML = html;
+            nearby.forEach(g => {
+                html += `
+                  <div class="route-list-item" onclick="openRouteDetail('${g.key}')">
+                      <div class="route-no-col" style="background-color:${g.colorHex};">${g.routeNo}</div>
+                      <div class="route-info-col"><div class="route-dest">${g.dest_e}</div><div class="route-sub">${g.company}</div></div>
+                  </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        } else {
+            // ALLOW BROWSING OF ALL LINES FOR SPECIFIC NETWORKS
+            let matches = groupedRoutes.filter(g => g.network === activeRegionFilter);
+            let title = activeRegionFilter === 'HR' ? 'ALL HEAVY RAIL LINES' : 'ALL LIGHT RAIL ROUTES';
+            
+            let html = `
+                <div style="padding: 12px 16px; font-size: 0.85rem; font-weight: 800; color: var(--text-sub); text-transform: uppercase; background: var(--bg-white); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 5;">
+                    <span>🚆 ${title}</span>
+                    <span style="color: var(--accent-blue); font-size: 0.8rem; flex-shrink: 0;">${matches.length} LINES</span>
+                </div>
+            `;
+            
+            matches.forEach(g => {
+                html += `
+                  <div class="route-list-item" onclick="openRouteDetail('${g.key}')">
+                      <div class="route-no-col" style="background-color:${g.colorHex};">${g.routeNo}</div>
+                      <div class="route-info-col"><div class="route-dest">${g.dest_e}</div><div class="route-sub">${g.company}</div></div>
+                  </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
         return;
     }
 
@@ -1387,7 +1423,7 @@ function renderFavList() {
 
 function removeFavRoute(key) {
     favRoutes = favRoutes.filter(k => k !== key);
-    localStorage.setItem('mtr_fav_routes_v2', JSON.stringify(favRoutes));
+    localStorage.setItem('mtr_fav_routes_v3', JSON.stringify(favRoutes));
     renderFavList();
 }
 function openFavModal() { document.getElementById('fav-modal').style.display = 'flex'; document.getElementById('favSearchInput').value = ''; renderFavSearch(); }
@@ -1415,7 +1451,7 @@ function renderFavSearch() {
 }
 
 function addFavFromModal(key) {
-    if(!favRoutes.includes(key)) { favRoutes.push(key); localStorage.setItem('mtr_fav_routes_v2', JSON.stringify(favRoutes)); }
+    if(!favRoutes.includes(key)) { favRoutes.push(key); localStorage.setItem('mtr_fav_routes_v3', JSON.stringify(favRoutes)); }
     closeFavModal(); renderFavList();
 }
 
